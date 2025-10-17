@@ -1,14 +1,12 @@
-# 🧩 **Proyecto ESP32 – Monitor Ambiental con Ubidots y OLED**
+🧩 Proyecto ESP32 – Monitor Ambiental con Ubidots y OLED
 
-## 📘 **Descripción general**
+📘 Descripción general
 
-El proyecto implementa un **sistema de monitoreo ambiental IoT** basado en un **ESP-WROOM-32**, que mide temperatura, humedad, presión, CO₂, compuestos orgánicos volátiles (TVOC) y **contaminación acústica con un micrófono SPM1423**, mostrando los datos en un **display OLED SSD1306** y enviándolos a **Ubidots STEM** mediante **MQTT**.
+El proyecto implementa un sistema de monitoreo ambiental IoT basado en un ESP-WROOM-32, que mide temperatura, humedad, presión, CO₂, compuestos orgánicos volátiles (TVOC), luminosidad (BH1750) y contaminación acústica con un micrófono SPM1423, mostrando los datos en un display OLED SSD1306 y enviándolos a Ubidots STEM mediante MQTT.
 
-Se estructura de forma **modular**, donde cada sensor o servicio está encapsulado en su propio archivo fuente (`.h/.cpp`), facilitando mantenimiento, pruebas y futuras expansiones (por ejemplo, añadir sensores nuevos o cambiar el broker MQTT).
+Se estructura de forma modular, donde cada sensor o servicio está encapsulado en su propio archivo fuente (.h/.cpp), facilitando mantenimiento, pruebas y futuras expansiones (por ejemplo, añadir sensores nuevos o cambiar el broker MQTT).
 
----
-
-## 🏗️ **Estructura del proyecto**
+🏗️ Estructura del proyecto
 
 Ubicados todos en la carpeta principal (modo compatible con Arduino IDE 2.3.6):
 
@@ -22,6 +20,8 @@ Proyecto-ESP32/
 ├── bme280.cpp
 ├── sgp30.h
 ├── sgp30.cpp
+├── bh1750.h
+├── bh1750.cpp
 ├── spm1423.h
 ├── spm1423.cpp
 ├── oled.h
@@ -33,11 +33,9 @@ Proyecto-ESP32/
 └── (otros futuros módulos opcionales)
 ```
 
----
+🧱 Componentes y responsabilidades
 
-## 🧱 **Componentes y responsabilidades**
-
-### 🔹 **main.ino**
+🔹 **main.ino**
 
 Punto de entrada mínimo del programa:
 
@@ -49,16 +47,15 @@ void setup() { app.begin(); }
 void loop()  { app.loop(); }
 ```
 
-➡️ Delegación total del flujo principal a la clase `App`.
+➡️ Delegación total del flujo principal a la clase App.
 
 ---
 
-### 🔹 **app.h / app.cpp**
+🔹 **app.h / app.cpp**
 
-**Coordinador general del sistema**.
-Controla el ciclo completo:
+Coordinador general del sistema. Controla el ciclo completo:
 
-* Inicialización de sensores (`BME280Sensor`, `SGP30Sensor`, `SPM1423Sensor`, `BH1750Sensor`)
+* Inicialización de sensores (BME280Sensor, SGP30Sensor, BH1750Sensor, SPM1423Sensor)
 * Configuración del WiFi y Ubidots
 * Actualización del OLED
 * Publicación de datos en intervalos definidos
@@ -67,7 +64,7 @@ Usa un objeto `EnvData` compartido para transferir lecturas entre módulos.
 
 ---
 
-### 🔹 **env_data.h**
+🔹 **env_data.h**
 
 Estructura central que agrupa todas las variables de entorno:
 
@@ -86,12 +83,12 @@ Es el “bus de datos interno” del sistema, usado por todos los módulos.
 
 ---
 
-### 🔹 **bme280.h / bme280.cpp**
+🔹 **bme280.h / bme280.cpp**
 
-Encapsula la lógica del **sensor BME280**:
+Encapsula la lógica del sensor BME280:
 
-* Lectura de **temperatura**, **humedad**, **presión** y **altitud**.
-* Actualiza los campos correspondientes en `EnvData`.
+* Lectura de temperatura, humedad, presión y altitud.
+* Actualiza los campos correspondientes en EnvData.
 
 ```cpp
 void BME280Sensor::read(EnvData& out);
@@ -99,12 +96,12 @@ void BME280Sensor::read(EnvData& out);
 
 ---
 
-### 🔹 **sgp30.h / sgp30.cpp**
+🔹 **sgp30.h / sgp30.cpp**
 
-Módulo del **sensor SGP30** (reemplazo del CCS811):
+Módulo del sensor SGP30 (reemplazo del CCS811):
 
-* Mide **eCO₂ (ppm)** y **TVOC (ppb)**.
-* Incluye **compensación de humedad** usando datos del BME280.
+* Mide eCO₂ (ppm) y TVOC (ppb).
+* Incluye compensación de humedad usando datos del BME280.
 * Controla internamente el intervalo mínimo de lectura (1 Hz).
 
 ```cpp
@@ -113,39 +110,53 @@ void SGP30Sensor::read(EnvData& io, float tempC, float humPct);
 
 ---
 
-### 🔹 **spm1423.h / spm1423.cpp**
+🔹 **bh1750.h / bh1750.cpp**
 
-Módulo del **micrófono digital SPM1423**:
+Sensor digital de luminosidad BH1750:
 
-* Captura muestras PDM a través del periférico **I2S** del ESP32.
-* Calcula el nivel sonoro en **dB SPL aproximados** a partir del valor RMS.
-* Expone banderas en `EnvData` para indicar si hay lectura válida (`hasNoise`).
+* Mide iluminancia ambiental en lux (rango: 1 lx a 65535 lx).
+* Permite determinar condiciones de iluminación interior.
+* Se comunica por I²C (dirección 0x23 u 0x5C).
+
+```cpp
+void BH1750Sensor::read(EnvData& out);
+```
+
+---
+
+🔹 **spm1423.h / spm1423.cpp**
+
+Módulo del micrófono digital SPM1423:
+
+* Captura muestras PDM a través del periférico I2S del ESP32.
+* Calcula el nivel sonoro en dB SPL aproximados a partir del valor RMS.
+* Expone banderas en EnvData para indicar si hay lectura válida (`hasNoise`).
 
 ```cpp
 void SPM1423Sensor::read(EnvData& out);
 ```
 
-Los datos se usan para evaluar la **contaminación acústica** en tiempo real.
+Los datos se usan para evaluar la contaminación acústica en tiempo real.
 
 ---
 
-### 🔹 **oled.h / oled.cpp**
+🔹 **oled.h / oled.cpp**
 
-Gestiona el **display OLED SSD1306**:
+Gestiona el display OLED SSD1306:
 
-* Muestra temperatura, humedad, CO₂ y estado de calidad del aire.
+* Muestra temperatura, humedad, CO₂, lux y estado de calidad del aire.
 * Puede indicar si el nivel de CO₂ es “BUENO / REGULAR / MALO / PELIGRO”.
 
 Se actualiza desde `App::loop()` tras cada publicación.
 
 ---
 
-### 🔹 **ubidots.h / ubidots.cpp**
+🔹 **ubidots.h / ubidots.cpp**
 
-Maneja la comunicación **MQTT con Ubidots**:
+Maneja la comunicación MQTT con Ubidots:
 
 * Publica variables con etiquetas (`VAR_TEMP`, `VAR_HUM`, `VAR_CO2_PPM`, `VAR_NOISE_DB`, etc.)
-* Permite suscripción a tópicos para **control remoto de LEDs**.
+* Permite suscripción a tópicos para control remoto de LEDs.
 * Usa la librería `UbidotsEsp32Mqtt`.
 
 ```cpp
@@ -155,85 +166,95 @@ ubidots.publish(DEVICE_LABEL);
 
 ---
 
-### 🔹 **config.h**
+🔹 **config.h**
 
 Contiene la configuración global:
 
 * Token de Ubidots
 * SSID y contraseña Wi-Fi
-* Etiquetas de variables para Ubidots (por ejemplo: `"bme_temp_c"`, `"ccs811_eco2_ppm"`)
+* Etiquetas de variables para Ubidots (por ejemplo: `"bme_temp_c"`, `"sgp30_eco2_ppm"`)
 
 ```cpp
 #define UBIDOTS_TOKEN "BBUS-XXXXX"
 #define WIFI_SSID     "..."
 #define WIFI_PASS     "..."
-#define VAR_CO2_PPM   "ccs811_eco2_ppm" // ahora medido por SGP30
+#define VAR_CO2_PPM   "sgp30_eco2_ppm"
 ```
 
 ---
 
-### 🔹 **pins.h**
+🔹 **pins.h**
 
 Define los pines del hardware:
 
 ```cpp
-#define LED_VERDE_PIN 4
-#define LED_ROJO_PIN  2
+#define LED_VERDE_PIN 13
+#define LED_ROJO_PIN  12
 ```
 
-Los LEDs se usan como indicadores visuales según el nivel de CO₂.
+Los LEDs se usan como indicadores visuales según el nivel de CO₂ y las condiciones ambientales.
 
 ---
 
-## 🌐 **Flujo de operación**
+🌐 Flujo de operación
 
-1. **Inicialización (`App::begin`)**
-
-   * Configura Wi-Fi, sensores, pantalla y MQTT.
-2. **Bucle principal (`App::loop`)**
-
-   * Lee sensores (BME280 y SGP30).
-   * Publica datos a Ubidots cada 5 s.
-   * Actualiza OLED con lecturas actuales.
-   * Cambia estado de LEDs según nivel de CO₂.
-3. **MQTT**
-
-   * Envia `eco2`, `tvoc`, `temp`, `hum`, etc.
-   * Recibe comandos para los LEDs.
+1. **Inicialización (App::begin)**  → Configura Wi-Fi, sensores, pantalla y MQTT.
+2. **Bucle principal (App::loop)**  → Lee sensores (BME280, SGP30, BH1750, SPM1423).
+3. **Publicación** → Envía datos a Ubidots cada 5 s.
+4. **Visualización** → Actualiza OLED y LEDs según condiciones.
+5. **MQTT** → Permite monitoreo remoto y control básico.
 
 ---
 
-## 📊 **Rangos ambientales**
+📊 **Rangos ambientales recomendados (interiores saludables)**
 
-Basado en estándares ASHRAE/EPA:
+Basados en estándares **ASHRAE**, **EPA**, y **OMS**:
 
-| CO₂ (ppm) | Nivel     | Acción           |
-| --------- | --------- | ---------------- |
-| 400–800   | Bueno     | Normal           |
-| 800–1200  | Regular   | Ventilar         |
-| 1200–2000 | Malo      | Urge ventilación |
-| >2000     | Peligroso | Aire no apto     |
-
----
-
-## ⚙️ **Dependencias del proyecto**
-
-Instaladas desde el **Library Manager** de Arduino IDE:
-
-* `Adafruit BME280 Library`
-* `Adafruit SGP30`
-* `Adafruit SSD1306`
-* `Adafruit GFX Library`
-* `BH1750` (sensor de luminosidad)
-* `driver/i2s` (incluido en el core ESP32; necesario para el micrófono SPM1423)
-* `UbidotsEsp32Mqtt`
-* `WiFi.h` (nativa del ESP32 core)
-* `PubSubClient` (incluida por Ubidots)
+| Parámetro                | Unidad | Rango Óptimo | Nivel       | Recomendación                                       |
+| ------------------------ | ------ | ------------ | ----------- | --------------------------------------------------- |
+| **Temperatura**          | °C     | 20 – 25      | Confortable | Ideal para interiores habitados                     |
+| **Humedad Relativa**     | %      | 40 – 60      | Confortable | Menor crecimiento de moho y buena sensación térmica |
+| **Presión atmosférica**  | hPa    | 1000 ± 10    | Normal      | Valores fuera pueden indicar clima cambiante        |
+| **CO₂ (eCO₂)**           | ppm    | 400 – 800    | Bueno       | Normal, aire fresco                                 |
+|                          |        | 800 – 1200   | Regular     | Se recomienda ventilar                              |
+|                          |        | 1200 – 2000  | Malo        | Urge ventilación                                    |
+|                          |        | >2000        | Peligroso   | Aire no apto, riesgo de fatiga y somnolencia        |
+| **TVOC**                 | ppb    | < 300        | Bueno       | Sin contaminantes perceptibles                      |
+|                          |        | 300 – 600    | Regular     | Posibles fuentes químicas leves                     |
+|                          |        | > 600        | Alto        | Ventilar o revisar fuentes de VOC                   |
+| **Iluminancia (BH1750)** | lux    | 300 – 500    | Adecuada    | Ideal para oficinas o habitaciones                  |
+|                          |        | < 150        | Baja        | Insuficiente para tareas visuales                   |
+|                          |        | > 1000       | Muy alta    | Podría generar deslumbramiento                      |
+| **Ruido (SPM1423)**      | dB(A)  | 30 – 50      | Silencioso  | Nivel típico de oficina o hogar tranquilo           |
+|                          |        | 50 – 70      | Moderado    | Conversaciones normales o electrodomésticos         |
+|                          |        | > 70         | Alto        | Puede generar fatiga auditiva o estrés              |
 
 ---
 
-## ✅ **Objetivos del diseño modular**
+⚙️ **Dependencias del proyecto**
 
-* Reutilizable: cada sensor es independiente.
-* Escalable: se pueden agregar nuevos módulos (`mq135.cpp`, `sd_logger.cpp`, etc.).
-* Legible: cada archivo cumple una sola función.
+Instaladas desde el Library Manager de Arduino IDE:
+
+* Adafruit BME280 Library
+* Adafruit SGP30
+* Adafruit SSD1306
+* Adafruit GFX Library
+* BH1750 (sensor de luminosidad)
+* driver/i2s (incluido en el core ESP32; necesario para el micrófono SPM1423)
+* UbidotsEsp32Mqtt
+* WiFi.h (nativa del ESP32 core)
+* PubSubClient (incluida por Ubidots)
+
+---
+
+✅ **Objetivos del diseño modular**
+
+* **Reutilizable:** cada sensor es independiente.
+* **Escalable:** se pueden agregar nuevos módulos (`mq135.cpp`, `sd_logger.cpp`, etc.).
+* **Legible:** cada archivo cumple una sola función.
+
+---
+
+📎 **Autor:** Andrés Álvarez Morales
+📅 **Versión:** Octubre 2025
+📡 **Plataforma:** ESP-WROOM-32 + Ubidots STEM
