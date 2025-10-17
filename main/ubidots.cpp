@@ -18,6 +18,9 @@ void UbidotsClient::addEnv(const EnvData& d) {
     _ubi.add(VAR_CO2_PPM, d.eco2);
     _ubi.add(VAR_TVOC_PPB, d.tvoc);
   }
+  if (d.hasLight) {
+    _ubi.add(VAR_LUX, d.lux);
+  }
 }
 
 bool UbidotsClient::publish() {

@@ -34,10 +34,19 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
   _disp.print(d.eco2, 0);
   _disp.println(" ppm");
 
+  _disp.setCursor(0, 24);
+  _disp.print("Lux: ");
+  if (d.hasLight) {
+    _disp.print(d.lux, 0);
+  } else {
+    _disp.print("---");
+  }
+  _disp.println();
+
   const char* level = "BUENO";
   if (d.eco2 > 1200) level = "MALO";
   else if (d.eco2 > 800) level = "REGULAR";
-  _disp.setCursor(0, 32);
+  _disp.setCursor(0, 40);
   _disp.print("Nivel: ");
   _disp.println(level);
 

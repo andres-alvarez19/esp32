@@ -8,6 +8,7 @@ void App::begin() {
 
   _bme.begin();
   _sgp.begin();
+  _light.begin();
   _oled.begin();
   _ubi.begin();
 
@@ -25,6 +26,7 @@ void App::loop() {
   // Leer sensores
   _bme.read(_data);
   _sgp.read(_data, _data.temp, _data.hum);
+  _light.read(_data);
 
   // Control visual según CO2
   if (_data.eco2 > 1500) {
