@@ -203,6 +203,7 @@ Instaladas desde el **Library Manager** de Arduino IDE:
 * `Adafruit SGP30`
 * `Adafruit SSD1306`
 * `Adafruit GFX Library`
+* `BH1750` (sensor de luminosidad)
 * `UbidotsEsp32Mqtt`
 * `WiFi.h` (nativa del ESP32 core)
 * `PubSubClient` (incluida por Ubidots)
