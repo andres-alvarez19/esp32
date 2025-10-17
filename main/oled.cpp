@@ -43,10 +43,19 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
   }
   _disp.println();
 
+  _disp.setCursor(0, 32);
+  _disp.print("Ruido: ");
+  if (d.hasNoise) {
+    _disp.print(d.noiseDb, 1);
+    _disp.println(" dB");
+  } else {
+    _disp.println("---");
+  }
+
   const char* level = "BUENO";
   if (d.eco2 > 1200) level = "MALO";
   else if (d.eco2 > 800) level = "REGULAR";
-  _disp.setCursor(0, 40);
+  _disp.setCursor(0, 48);
   _disp.print("Nivel: ");
   _disp.println(level);
 

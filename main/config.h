@@ -13,3 +13,4 @@
 #define VAR_CO2_PPM   "sgp30_eco2_ppm"
 #define VAR_TVOC_PPB  "sgp30_tvoc_ppb"
 #define VAR_LUX       "bh1750_lux"
+#define VAR_NOISE_DB  "spm1423_noise_db"

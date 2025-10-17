@@ -2,7 +2,7 @@
 
 ## 📘 **Descripción general**
 
-El proyecto implementa un **sistema de monitoreo ambiental IoT** basado en un **ESP-WROOM-32**, que mide temperatura, humedad, presión, CO₂ y compuestos orgánicos volátiles (TVOC), mostrando los datos en un **display OLED SSD1306** y enviándolos a **Ubidots STEM** mediante **MQTT**.
+El proyecto implementa un **sistema de monitoreo ambiental IoT** basado en un **ESP-WROOM-32**, que mide temperatura, humedad, presión, CO₂, compuestos orgánicos volátiles (TVOC) y **contaminación acústica con un micrófono SPM1423**, mostrando los datos en un **display OLED SSD1306** y enviándolos a **Ubidots STEM** mediante **MQTT**.
 
 Se estructura de forma **modular**, donde cada sensor o servicio está encapsulado en su propio archivo fuente (`.h/.cpp`), facilitando mantenimiento, pruebas y futuras expansiones (por ejemplo, añadir sensores nuevos o cambiar el broker MQTT).
 
@@ -22,6 +22,8 @@ Proyecto-ESP32/
 ├── bme280.cpp
 ├── sgp30.h
 ├── sgp30.cpp
+├── spm1423.h
+├── spm1423.cpp
 ├── oled.h
 ├── oled.cpp
 ├── ubidots.h
@@ -56,7 +58,7 @@ void loop()  { app.loop(); }
 **Coordinador general del sistema**.
 Controla el ciclo completo:
 
-* Inicialización de sensores (`BME280Sensor`, `SGP30Sensor`)
+* Inicialización de sensores (`BME280Sensor`, `SGP30Sensor`, `SPM1423Sensor`, `BH1750Sensor`)
 * Configuración del WiFi y Ubidots
 * Actualización del OLED
 * Publicación de datos en intervalos definidos
@@ -72,8 +74,11 @@ Estructura central que agrupa todas las variables de entorno:
 ```cpp
 struct EnvData {
   bool hasBme, hasCcs;
+  bool hasLight, hasNoise;
   float temp, hum, press, alt; // datos BME280
   float eco2, tvoc;            // datos SGP30
+  float lux;                   // datos BH1750
+  float noiseDb;               // datos SPM1423
 };
 ```
 
@@ -108,6 +113,22 @@ void SGP30Sensor::read(EnvData& io, float tempC, float humPct);
 
 ---
 
+### 🔹 **spm1423.h / spm1423.cpp**
+
+Módulo del **micrófono digital SPM1423**:
+
+* Captura muestras PDM a través del periférico **I2S** del ESP32.
+* Calcula el nivel sonoro en **dB SPL aproximados** a partir del valor RMS.
+* Expone banderas en `EnvData` para indicar si hay lectura válida (`hasNoise`).
+
+```cpp
+void SPM1423Sensor::read(EnvData& out);
+```
+
+Los datos se usan para evaluar la **contaminación acústica** en tiempo real.
+
+---
+
 ### 🔹 **oled.h / oled.cpp**
 
 Gestiona el **display OLED SSD1306**:
@@ -123,7 +144,7 @@ Se actualiza desde `App::loop()` tras cada publicación.
 
 Maneja la comunicación **MQTT con Ubidots**:
 
-* Publica variables con etiquetas (`VAR_TEMP`, `VAR_HUM`, `VAR_CO2_PPM`, etc.)
+* Publica variables con etiquetas (`VAR_TEMP`, `VAR_HUM`, `VAR_CO2_PPM`, `VAR_NOISE_DB`, etc.)
 * Permite suscripción a tópicos para **control remoto de LEDs**.
 * Usa la librería `UbidotsEsp32Mqtt`.
 
@@ -204,6 +225,7 @@ Instaladas desde el **Library Manager** de Arduino IDE:
 * `Adafruit SSD1306`
 * `Adafruit GFX Library`
 * `BH1750` (sensor de luminosidad)
+* `driver/i2s` (incluido en el core ESP32; necesario para el micrófono SPM1423)
 * `UbidotsEsp32Mqtt`
 * `WiFi.h` (nativa del ESP32 core)
 * `PubSubClient` (incluida por Ubidots)
