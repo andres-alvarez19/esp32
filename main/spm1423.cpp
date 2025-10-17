@@ -33,8 +33,16 @@ bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int bclkPin, int wsPi
   config.use_apll = false;
   config.tx_desc_auto_clear = false;
 #if ESP_IDF_VERSION_MAJOR >= 4
+#ifdef I2S_MCLK_MULTIPLE_DEFAULT
   config.mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT;
-  config.bits_per_chan = I2S_BITS_PER_SAMPLE_16BIT;
+#else
+  config.mclk_multiple = I2S_MCLK_MULTIPLE_256;
+#endif
+#ifdef I2S_BITS_PER_CHAN_16BIT
+  config.bits_per_chan = I2S_BITS_PER_CHAN_16BIT;
+#else
+  config.bits_per_chan = static_cast<i2s_bits_per_chan_t>(I2S_BITS_PER_SAMPLE_16BIT);
+#endif
 #endif
 
   if (i2s_driver_install(_port, &config, 0, nullptr) != ESP_OK) {
