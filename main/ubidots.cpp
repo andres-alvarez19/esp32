@@ -21,6 +21,9 @@ void UbidotsClient::addEnv(const EnvData& d) {
   if (d.hasLight) {
     _ubi.add(VAR_LUX, d.lux);
   }
+  if (d.hasNoise) {
+    _ubi.add(VAR_NOISE_DB, d.noiseDb);
+  }
 }
 
 bool UbidotsClient::publish() {

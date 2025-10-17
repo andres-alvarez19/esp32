@@ -5,6 +5,7 @@
 #include "bme280.h"
 #include "sgp30.h"
 #include "bh1750.h"
+#include "spm1423.h"
 #include "oled.h"
 #include "ubidots.h"
 
@@ -17,6 +18,7 @@ class App {
   BME280Sensor _bme;
   SGP30Sensor  _sgp;
   BH1750Sensor _light;
+  SPM1423Sensor _sound;
   OledView     _oled;
   UbidotsClient _ubi;
   EnvData _data;
