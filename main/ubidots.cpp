@@ -1,10 +1,16 @@
 #include "ubidots.h"
 #include <Arduino.h>
+#include <WiFi.h>
 
-void UbidotsClient::begin() {
+bool UbidotsClient::begin() {
+  Serial.println("[WIFI] Conectando a red...");
   _ubi.connectToWifi(WIFI_SSID, WIFI_PASS);
   _ubi.setup();
   _ubi.reconnect();
+
+  bool wifiOk = WiFi.status() == WL_CONNECTED;
+  Serial.println(wifiOk ? "[WIFI] Conexion establecida" : "[WIFI] Error al conectar");
+  return wifiOk;
 }
 
 void UbidotsClient::addEnv(const EnvData& d) {

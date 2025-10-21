@@ -8,6 +8,7 @@
 #include "spm1423.h"
 #include "oled.h"
 #include "ubidots.h"
+#include "buzzer.h"
 
 class App {
  public:
@@ -19,9 +20,11 @@ class App {
   SGP30Sensor  _sgp;
   BH1750Sensor _light;
   SPM1423Sensor _sound;
-  OledView     _oled;
+  OledView      _oled;
   UbidotsClient _ubi;
+  ActiveBuzzer  _buzzer;
   EnvData _data;
 
   unsigned long _lastPublish = 0;
+  bool _modulesReady = false;
 };
