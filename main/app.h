@@ -14,6 +14,7 @@ class App {
  public:
   bool begin();
   void update();
+  void registerBuzzer(ActiveBuzzer* buzzer) { _ubi.registerBuzzer(buzzer); }
   bool modulesReady() const { return _modulesReady; }
   const EnvData& data() const { return _data; }
   const String& failedModules() const { return _failedModules; }

@@ -1,6 +1,8 @@
 #include "ubidots.h"
 #include <Arduino.h>
 #include <WiFi.h>
+#include "pins.h"
+#include <functional>
 
 bool UbidotsClient::begin() {
   Serial.println("[WIFI] Conectando a red...");
@@ -36,8 +38,132 @@ bool UbidotsClient::begin() {
 
   // Configurar cliente MQTT (PubSubClient) sobre WiFiClient
   _mqtt.setServer(UBIDOTS_HOST, UBIDOTS_PORT);
+  // Callback para recibir mensajes
+  _mqtt.setCallback([this](char* topic, byte* payload, unsigned int length) {
+    String msg;
+    for (unsigned int i = 0; i < length; ++i) msg += (char)payload[i];
+    Serial.printf("[MQTT] Mensaje entrante topic=%s payload=%s\n", topic, msg.c_str());
+    // Intentar parsear JSON sencillo para las claves 'buzzer', 'led_rojo', 'led_verde'
+    auto handleKey = [&](const char* key, std::function<void(bool)> action) {
+      int idx = msg.indexOf(String("\"") + String(key) + String("\""));
+      if (idx < 0) return;
+      int colon = msg.indexOf(':', idx);
+      if (colon < 0) return;
+      int start = colon + 1;
+      int end = msg.indexOf(',', start);
+      if (end < 0) end = msg.indexOf('}', start);
+      if (end <= start) return;
+      String token = msg.substring(start, end);
+      token.trim();
+
+      // Helper to extract a boolean/numeric value from a token or nested object
+      auto extractVal = [&](const String& t) -> int {
+        String s = t;
+        s.trim();
+        if (s.length() == 0) return -1;
+        // If it's an object like {"value":1,...}
+        if (s.charAt(0) == '{') {
+          int vpos = s.indexOf("\"value\"");
+          if (vpos < 0) vpos = s.indexOf("value");
+          if (vpos >= 0) {
+            int c = s.indexOf(':', vpos);
+            if (c >= 0) {
+              int ss = c + 1;
+              int ee = s.indexOf(',', ss);
+              if (ee < 0) ee = s.indexOf('}', ss);
+              if (ee < 0) ee = s.length();
+              String vv = s.substring(ss, ee);
+              vv.trim();
+              if (vv.startsWith("\"") && vv.endsWith("\"")) vv = vv.substring(1, vv.length()-1);
+              if (vv == "1" || vv.equalsIgnoreCase("true")) return 1;
+              if (vv == "0" || vv.equalsIgnoreCase("false")) return 0;
+            }
+          }
+          return -1;
+        }
+
+        // Plain token (number, true/false or quoted)
+        String vv = s;
+        if (vv.startsWith("\"") && vv.endsWith("\"")) vv = vv.substring(1, vv.length()-1);
+        if (vv == "1" || vv.equalsIgnoreCase("true")) return 1;
+        if (vv == "0" || vv.equalsIgnoreCase("false")) return 0;
+        return -1;
+      };
+
+      int v = extractVal(token);
+      if (v >= 0) action(v == 1);
+    };
+
+    handleKey("buzzer", [&](bool newState){
+      if (newState != _buzzerState) {
+        _buzzerState = newState;
+        Serial.printf("[BUZZER] Estado cambiado a %d\n", _buzzerState);
+        if (_buzzer && _buzzer->isReady()) {
+          _buzzer->on();
+          delay(500);
+          _buzzer->off();
+        }
+      }
+    });
+
+    // LEDs: mantenemos estado y actuamos solo si hay cambio
+    static bool ledRojoState = false;
+    static bool ledVerdeState = false;
+    handleKey("led_rojo", [&](bool newState){
+      if (newState != ledRojoState) {
+        ledRojoState = newState;
+        digitalWrite(LED_ROJO_PIN, ledRojoState ? HIGH : LOW);
+        Serial.printf("[LED] led_rojo cambiado a %d\n", ledRojoState);
+      }
+    });
+    handleKey("led_verde", [&](bool newState){
+      if (newState != ledVerdeState) {
+        ledVerdeState = newState;
+        digitalWrite(LED_VERDE_PIN, ledVerdeState ? HIGH : LOW);
+        Serial.printf("[LED] led_verde cambiado a %d\n", ledVerdeState);
+      }
+    });
+  });
+
+  // Subscribir al tópico de dispositivo y al tópico de variable buzzer
+  String devTopic = String("/v1.6/devices/") + DEVICE_LABEL;
+  String buzzerTopic = devTopic + String("/buzzer");
+  // intentos de reconexión y suscripción se harán en publishUbi o loop externo
+  if (_mqtt.connected()) {
+    _mqtt.subscribe(devTopic.c_str());
+    _mqtt.subscribe(buzzerTopic.c_str());
+  }
 
   return true;
+}
+
+void UbidotsClient::loop() {
+  // Mantener la librería Ubidots y PubSubClient en funcionamiento
+  _ubi.loop();
+
+  // Si no conectado, intentar reconectar cada cierto tiempo
+  static unsigned long lastReconnectAttempt = 0;
+  const unsigned long kReconnectInterval = 5000; // 5s
+  if (!_mqtt.connected()) {
+    unsigned long now = millis();
+    if (now - lastReconnectAttempt > kReconnectInterval) {
+      lastReconnectAttempt = now;
+      Serial.println("[MQTT] Intentando conectar al broker Ubidots desde loop()...");
+      bool connected = _mqtt.connect(makeClientId().c_str(), UBIDOTS_TOKEN, "");
+      Serial.printf("[MQTT] Conectado? %d\n", connected);
+      if (connected) {
+        // Re-suscribirse a los topics del dispositivo
+        String devTopic = String("/v1.6/devices/") + DEVICE_LABEL;
+        String buzzerTopic = devTopic + String("/buzzer");
+        _mqtt.subscribe(devTopic.c_str());
+        _mqtt.subscribe(buzzerTopic.c_str());
+        Serial.printf("[MQTT] Suscrito a %s y %s\n", devTopic.c_str(), buzzerTopic.c_str());
+      }
+    }
+  } else {
+    // Cuando está conectado, procesar mensajes entrantes
+    _mqtt.loop();
+  }
 }
 
 void UbidotsClient::addEnv(const EnvData& d) {
@@ -65,7 +191,6 @@ void UbidotsClient::addEnv(const EnvData& d) {
     addIf(VAR_TEMP, d.temp);
     addIf(VAR_HUM, d.hum);
     addIf(VAR_PRESS, d.press);
-    addIf(VAR_ALT, d.alt);
   } else {
     Serial.println("[UBI] BME not present, skipping temperature/humidity/pressure/altitude");
   }
@@ -118,7 +243,6 @@ void UbidotsClient::addEnv(const EnvData& d) {
       splitAdd(VAR_TEMP, d.temp, true);
       splitAdd(VAR_HUM, d.hum, true);
       splitAdd(VAR_PRESS, d.press, true);
-      splitAdd(VAR_ALT, d.alt, true);
     }
     if (d.hasCcs) {
       splitAdd(VAR_CO2_PPM, d.eco2, false);

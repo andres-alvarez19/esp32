@@ -24,6 +24,8 @@ bool App::begin() {
   checkModule("OLED", _oled.begin());
   checkModule("Ubidots", _ubi.begin());
 
+  // buzzer will be registered from main.ino after App is initialized
+
   _modulesReady = modulesOk;
   if (!_modulesReady) {
     Serial.print("[APP] Modulos con fallo: ");
@@ -51,7 +53,7 @@ void App::update() {
   // publicación se realizan cada 5000 ms para no saturar la consola.
 
 
-  if (millis() - _lastPublish > 5000) {
+  if (millis() - _lastPublish > 60000) {
     // Log de todos los sensores - imprimir estado y valores leídos (cada 5s)
     auto printFloat = [](const char* name, float v) {
       if (isnan(v)) {

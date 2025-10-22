@@ -35,6 +35,9 @@ void setup() {
     failed += app.failedModules();
   }
 
+  // Register global buzzer with the app so MQTT callbacks can control it
+  app.registerBuzzer(&buzzer);
+
   if (failed.isEmpty()) {
     Serial.println("[MAIN] Monitor listo");
     digitalWrite(LED_VERDE_PIN, HIGH);

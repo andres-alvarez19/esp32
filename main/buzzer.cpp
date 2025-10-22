@@ -1,6 +1,10 @@
 #include "buzzer.h"
 
 #include <Arduino.h>
+// Use ESP32 LEDC APIs if available to support PWM buzzer control
+#if defined(ARDUINO_ARCH_ESP32)
+#include <driver/ledc.h>
+#endif
 
 bool ActiveBuzzer::begin(uint8_t pin) {
   _pin = pin;
