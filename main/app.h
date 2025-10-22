@@ -1,6 +1,7 @@
 #pragma once
+#include <Arduino.h>
+
 #include "config.h"
-#include "pins.h"
 #include "env_data.h"
 #include "bme280.h"
 #include "sgp30.h"
@@ -8,12 +9,14 @@
 #include "spm1423.h"
 #include "oled.h"
 #include "ubidots.h"
-#include "buzzer.h"
 
 class App {
  public:
-  void begin();
-  void loop();
+  bool begin();
+  void update();
+  bool modulesReady() const { return _modulesReady; }
+  const EnvData& data() const { return _data; }
+  const String& failedModules() const { return _failedModules; }
 
  private:
   BME280Sensor _bme;
@@ -22,9 +25,9 @@ class App {
   SPM1423Sensor _sound;
   OledView      _oled;
   UbidotsClient _ubi;
-  ActiveBuzzer  _buzzer;
   EnvData _data;
 
   unsigned long _lastPublish = 0;
   bool _modulesReady = false;
+  String _failedModules;
 };

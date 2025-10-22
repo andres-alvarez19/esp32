@@ -2,92 +2,74 @@
 
 #include <Arduino.h>
 #include <cmath>
-#include <cstring>
-#include <esp_idf_version.h>
-
-#ifndef ESP_IDF_VERSION_MAJOR
-#define ESP_IDF_VERSION_MAJOR 3
-#endif
 
 namespace {
 constexpr size_t kSampleCount = 512;
 constexpr float kSilenceFloor = 1.0f;
 }
 
-bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int bclkPin, int wsPin, int dataPin) {
+bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataPin) {
   end();
 
   _port = port;
   _sampleRate = sampleRate;
 
-  i2s_config_t config;
-  std::memset(&config, 0, sizeof(config));
-  config.mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_PDM);
-  config.sample_rate = sampleRate;
-  config.bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT;
-  config.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT;
-  config.communication_format = I2S_COMM_FORMAT_STAND_MSB;
-  config.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1;
-  config.dma_buf_count = 4;
-  config.dma_buf_len = 256;
-  config.use_apll = false;
-  config.tx_desc_auto_clear = false;
-#if ESP_IDF_VERSION_MAJOR >= 4
-#ifdef I2S_MCLK_MULTIPLE_DEFAULT
-  config.mclk_multiple = I2S_MCLK_MULTIPLE_DEFAULT;
-#else
-  config.mclk_multiple = I2S_MCLK_MULTIPLE_256;
-#endif
-#ifdef I2S_BITS_PER_CHAN_16BIT
-  config.bits_per_chan = I2S_BITS_PER_CHAN_16BIT;
-#else
-  config.bits_per_chan = static_cast<i2s_bits_per_chan_t>(I2S_BITS_PER_SAMPLE_16BIT);
-#endif
-#endif
+  i2s_chan_config_t chanConfig = I2S_CHANNEL_DEFAULT_CONFIG(static_cast<int>(_port), I2S_ROLE_MASTER);
+  chanConfig.dma_desc_num = 4;
+  chanConfig.dma_frame_num = 256;
+  chanConfig.auto_clear = true;
 
-  if (i2s_driver_install(_port, &config, 0, nullptr) != ESP_OK) {
-    Serial.println("[SPM1423] Error instalando driver I2S");
+  esp_err_t err = i2s_new_channel(&chanConfig, nullptr, &_rxChannel);
+  if (err != ESP_OK) {
+    Serial.printf("[SPM1423] Error creando canal PDM (%d)\n", (int)err);
+    _rxChannel = nullptr;
     return false;
   }
 
-  i2s_pin_config_t pinConfig;
-  std::memset(&pinConfig, 0, sizeof(pinConfig));
-  pinConfig.bck_io_num = bclkPin;
-  pinConfig.ws_io_num = wsPin;
-  pinConfig.data_out_num = I2S_PIN_NO_CHANGE;
-  pinConfig.data_in_num = dataPin;
-#if ESP_IDF_VERSION_MAJOR >= 4
-  pinConfig.mck_io_num = I2S_PIN_NO_CHANGE;
-#endif
+  i2s_pdm_rx_config_t pdmConfig = {
+      .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(sampleRate),
+      .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT),
+      .gpio_cfg = {
+          .clk = clkPin,
+          .din = dataPin,
+          .invert_flags = {
+              .clk_inv = false,
+              .din_inv = false,
+          },
+      },
+  };
+  pdmConfig.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
+  pdmConfig.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
 
-  if (i2s_set_pin(_port, &pinConfig) != ESP_OK) {
-    Serial.println("[SPM1423] Error configurando pines I2S");
-    i2s_driver_uninstall(_port);
+  err = i2s_channel_init_pdm_rx_mode(_rxChannel, &pdmConfig);
+  if (err != ESP_OK) {
+    Serial.printf("[SPM1423] Error configurando modo PDM (%d)\n", (int)err);
+    end();
     return false;
   }
 
-  if (i2s_set_clk(_port, sampleRate, I2S_BITS_PER_SAMPLE_16BIT, I2S_CHANNEL_MONO) != ESP_OK) {
-    Serial.println("[SPM1423] Error ajustando reloj I2S");
-    i2s_driver_uninstall(_port);
+  err = i2s_channel_enable(_rxChannel);
+  if (err != ESP_OK) {
+    Serial.printf("[SPM1423] Error habilitando canal PDM (%d)\n", (int)err);
+    end();
     return false;
   }
 
-  i2s_zero_dma_buffer(_port);
   _ok = true;
-  Serial.println("[SPM1423] Microfono listo");
+  Serial.println("[SPM1423] Microfono PDM listo");
   return true;
 }
 
 void SPM1423Sensor::read(EnvData& out) {
   out.hasNoise = false;
   out.noiseDb = NAN;
-  if (!_ok) {
+  if (!_ok || !_rxChannel) {
     return;
   }
 
   int16_t buffer[kSampleCount];
   size_t bytesRead = 0;
-  esp_err_t err = i2s_read(_port, buffer, sizeof(buffer), &bytesRead, 20 / portTICK_PERIOD_MS);
+  esp_err_t err = i2s_channel_read(_rxChannel, buffer, sizeof(buffer), &bytesRead, 20 / portTICK_PERIOD_MS);
   if (err != ESP_OK || bytesRead == 0) {
     return;
   }
@@ -108,13 +90,13 @@ void SPM1423Sensor::read(EnvData& out) {
     return;
   }
 
-  float normalized = static_cast<float>(rms / 32767.0);
+  float normalized = static_cast<float>(rms / 32767.0f);
   if (normalized <= 0.0f) {
     return;
   }
 
   float dbfs = 20.0f * static_cast<float>(std::log10(normalized));
-  float dbSpl = 94.0f + dbfs;  // Conversión relativa (0 dBFS ≈ 94 dB SPL)
+  float dbSpl = 94.0f + dbfs;
 
   if (!std::isfinite(dbSpl)) {
     return;
@@ -125,8 +107,12 @@ void SPM1423Sensor::read(EnvData& out) {
 }
 
 void SPM1423Sensor::end() {
-  if (_ok) {
-    i2s_driver_uninstall(_port);
-    _ok = false;
+  if (_rxChannel) {
+    if (_ok) {
+      i2s_channel_disable(_rxChannel);
+    }
+    i2s_del_channel(_rxChannel);
+    _rxChannel = nullptr;
   }
+  _ok = false;
 }
