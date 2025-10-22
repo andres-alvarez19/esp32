@@ -5,8 +5,10 @@
 - `App` gestiona el ciclo de adquisición de sensores, el formateo de datos y la publicación en la nube.
 - El driver `SPM1423Sensor` implementa la captura PDM y calcula un nivel de ruido estimado en dB SPL.
 - Las estructuras auxiliares (`EnvData`, `pins.h`) mantienen la información compartida y el mapeado de pines.
+- `UbidotsClient` se encarga de la conectividad WiFi, el empaquetado de lecturas y la publicación MQTT hacia Ubidots.
 
 ## Controlador principal (`main.ino`)
+Gestiona el ciclo de vida del firmware: arranca los periféricos, valida qué módulos se inicializaron correctamente y decide acciones visibles (LEDs, zumbador) en función de las lecturas ambientales publicadas por `App`.
 ```cpp
 #include <Arduino.h>
 #include <cmath>
@@ -90,6 +92,7 @@ void loop() {
 ## Orquestador de sensores (`app.h` y `app.cpp`)
 
 ### app.h
+Declara la clase `App`, responsable de abstraer cada sensor y servicios asociados. Mantiene el estado compartido (`EnvData`), las instancias de cada módulo y expone métodos para iniciar y actualizar el conjunto completo.
 ```cpp
 #pragma once
 #include <Arduino.h>
@@ -127,6 +130,7 @@ class App {
 ```
 
 ### app.cpp
+Implementa la lógica de inicialización secuencial y la actualización periódica: invoca a cada sensor para poblar `EnvData`, imprime diagnósticos, dibuja en la pantalla OLED y envía los datos a Ubidots a intervalos fijos.
 ```cpp
 #include "app.h"
 #include <Arduino.h>
@@ -211,9 +215,133 @@ void App::update() {
 }
 ```
 
+## Cliente Ubidots (`ubidots.h` y `ubidots.cpp`)
+
+### ubidots.h
+Declara el contenedor del cliente MQTT usado para conectarse a Ubidots. Se inicializa con el token configurado y ofrece métodos para preparar la sesión, cargar lecturas y publicar.
+```cpp
+#pragma once
+#include <UbidotsEsp32Mqtt.h>
+#include "config.h"
+#include "env_data.h"
+
+class UbidotsClient {
+ public:
+  explicit UbidotsClient(const char* token = UBIDOTS_TOKEN)
+  : _ubi(token, UBIDOTS_HOST, UBIDOTS_PORT) {}
+  bool begin();
+  void loop() { _ubi.loop(); }
+  void addEnv(const EnvData& d);
+  bool publish();
+
+ private:
+  Ubidots _ubi;
+};
+```
+
+### ubidots.cpp
+Gestiona la conexión WiFi previa a iniciar MQTT, añade las variables etiquetadas definidas en `config.h` y maneja reconexiones en caso de fallos de publicación.
+```cpp
+#include "ubidots.h"
+#include <Arduino.h>
+#include <WiFi.h>
+
+bool UbidotsClient::begin() {
+  Serial.println("[WIFI] Conectando a red...");
+  // Mostrar parámetros de conexión (token enmascarado)
+  {
+    const char* t = UBIDOTS_TOKEN;
+    String masked = String(t);
+    if (masked.length() > 6) {
+      masked = masked.substring(0, 3) + "..." + masked.substring(masked.length()-3);
+    }
+    Serial.printf("[UBIDOTS] Host=%s Port=%d TLS=%d Token=%s\n", UBIDOTS_HOST, UBIDOTS_PORT, UBIDOTS_USE_TLS, masked.c_str());
+  }
+  _ubi.connectToWifi(WIFI_SSID, WIFI_PASS);
+  // Esperar a que la WiFi se conecte antes de inicializar MQTT
+  unsigned long start = millis();
+  const unsigned long timeout = 10000; // 10s
+  while (WiFi.status() != WL_CONNECTED && (millis() - start) < timeout) {
+    Serial.print(".");
+    delay(200);
+  }
+  Serial.println();
+
+  bool wifiOk = WiFi.status() == WL_CONNECTED;
+  Serial.println(wifiOk ? "[WIFI] Conexion establecida" : "[WIFI] Error al conectar (timeout)");
+
+  if (!wifiOk) {
+    return false;
+  }
+
+  // Inicializar y conectar el cliente Ubidots ahora que la WiFi está estable
+  _ubi.setup();
+  _ubi.reconnect();
+
+  return true;
+}
+
+void UbidotsClient::addEnv(const EnvData& d) {
+  if (d.hasBme) {
+    _ubi.add(VAR_TEMP, d.temp);
+    _ubi.add(VAR_HUM,  d.hum);
+    _ubi.add(VAR_PRESS, d.press);
+    _ubi.add(VAR_ALT, d.alt);
+  }
+  if (d.hasCcs) {
+    _ubi.add(VAR_CO2_PPM, d.eco2);
+    _ubi.add(VAR_TVOC_PPB, d.tvoc);
+  }
+  if (d.hasLight) {
+    _ubi.add(VAR_LUX, d.lux);
+  }
+  if (d.hasNoise) {
+    _ubi.add(VAR_NOISE_DB, d.noiseDb);
+  }
+}
+
+bool UbidotsClient::publish() {
+  bool ok = _ubi.publish(DEVICE_LABEL);
+  if (ok) {
+    Serial.println("[MQTT] Publicado OK");
+    return true;
+  }
+
+  // Publish failed: intentar diagnosticar la causa
+  Serial.println("[MQTT] Fallo al publicar");
+
+  // Estado de la conexión WiFi
+  wl_status_t wifiStatus = WiFi.status();
+  Serial.printf("[MQTT] WiFi.status() = %d\n", (int)wifiStatus);
+  if (wifiStatus != WL_CONNECTED) {
+    Serial.println("[MQTT] Motivo: WiFi no conectado");
+  }
+
+  // Intentar reconectar al broker Ubidots
+  Serial.println("[MQTT] Intentando reconectar al broker...");
+  _ubi.reconnect();
+  // Comprobar estado de la WiFi tras intentar reconectar
+  wl_status_t wifiStatusAfter = WiFi.status();
+  Serial.printf("[MQTT] WiFi.status() tras reconexión = %d\n", (int)wifiStatusAfter);
+  if (wifiStatusAfter != WL_CONNECTED) {
+    Serial.println("[MQTT] Motivo probable: WiFi desconectada tras reconexión");
+  } else {
+    Serial.println("[MQTT] Se intentó reconectar al broker; si el problema persiste, comprobar credenciales y disponibilidad del broker");
+  }
+
+  // Intentar publicar de nuevo tras reconexión
+  delay(1000); // dar tiempo a restablecer la conexión
+  Serial.println("[MQTT] Intentando publicar de nuevo tras reconexión...");
+  bool ok2 = _ubi.publish(DEVICE_LABEL);
+  Serial.println(ok2 ? "[MQTT] Publicado OK tras reconexión" : "[MQTT] Sigue fallando la publicación tras reconexión");
+  return ok2;
+}
+```
+
 ## Sensor de ruido PDM (`spm1423.h` y `spm1423.cpp`)
 
 ### spm1423.h
+Define la interfaz del driver del micrófono digital SPM1423, exponiendo métodos para configurar el puerto I2S en modo PDM, capturar muestras y liberar el recurso cuando deja de usarse.
 ```cpp
 #pragma once
 
@@ -241,6 +369,7 @@ class SPM1423Sensor {
 ```
 
 ### spm1423.cpp
+Configura el periférico I2S en modo maestro PDM, gestiona el buffer DMA para obtener bloques de audio y convierte las muestras en un nivel RMS expresado en dB SPL, filtrando ruido de fondo antes de reportarlo en `EnvData`.
 ```cpp
 #include "spm1423.h"
 
@@ -362,6 +491,7 @@ void SPM1423Sensor::end() {
 ## Estructuras de apoyo
 
 ### env_data.h
+Estructura que centraliza las lecturas de todos los sensores y banderas de disponibilidad, permitiendo que el resto de módulos consuman valores consistentes sin acoplarse a implementaciones concretas.
 ```cpp
 #pragma once
 #include <math.h>
@@ -383,6 +513,7 @@ struct EnvData {
 ```
 
 ### pins.h
+Agrupa en constantes los pines asignados a LEDs, buzzer y micrófono PDM para facilitar su reutilización y evitar valores mágicos dispersos por el código.
 ```cpp
 #pragma once
 #define LED_VERDE_PIN 13
