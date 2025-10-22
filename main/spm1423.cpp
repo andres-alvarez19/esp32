@@ -14,7 +14,7 @@ bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataP
   _port = port;
   _sampleRate = sampleRate;
 
-  i2s_chan_config_t chanConfig = I2S_CHANNEL_DEFAULT_CONFIG(static_cast<int>(_port), I2S_ROLE_MASTER);
+  i2s_chan_config_t chanConfig = I2S_CHANNEL_DEFAULT_CONFIG(_port, I2S_ROLE_MASTER);
   chanConfig.dma_desc_num = 4;
   chanConfig.dma_frame_num = 256;
   chanConfig.auto_clear = true;
@@ -28,7 +28,7 @@ bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataP
 
   i2s_pdm_rx_config_t pdmConfig = {
       .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(sampleRate),
-      .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT),
+      .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
       .gpio_cfg = {
           .clk = clkPin,
           .din = dataPin,
