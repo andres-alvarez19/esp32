@@ -1,8 +1,8 @@
 #pragma once
 
-#define UBIDOTS_TOKEN "BBUS-TcuDrqL35peeGflABzk9m184wncXMr"
-#define WIFI_SSID     "FAMILIA MORALES"
-#define WIFI_PASS     "alvarezmorales"
+#define UBIDOTS_TOKEN "Token"
+#define WIFI_SSID     "WIFI SSID"
+#define WIFI_PASS     "contrasena"
 
 #define DEVICE_LABEL  "esp_wroom_32"
 
