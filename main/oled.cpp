@@ -20,7 +20,7 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
   if (!_ok) return;
   _disp.clearDisplay();
 
-  _disp.setTextSize(1);
+  _disp.setTextSize(2);
   _disp.setCursor(0, 0);
   _disp.print("T:");
   _disp.print(d.temp, 1);
@@ -28,7 +28,7 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
   _disp.print(d.hum, 1);
   _disp.println("%");
 
-  _disp.setTextSize(1);
+  _disp.setTextSize(2);
   _disp.setCursor(0, 16);
   _disp.print("CO2: ");
   _disp.print(d.eco2, 0);

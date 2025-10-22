@@ -2,13 +2,14 @@
 
 #include <Arduino.h>
 #include <cmath>
+#include <driver/gpio.h>
 
 namespace {
 constexpr size_t kSampleCount = 512;
 constexpr float kSilenceFloor = 1.0f;
 }
 
-bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataPin) {
+bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, gpio_num_t clkPin, gpio_num_t dataPin) {
   end();
 
   _port = port;
@@ -29,10 +30,10 @@ bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataP
   i2s_pdm_rx_config_t pdmConfig = {
       .clk_cfg = I2S_PDM_RX_CLK_DEFAULT_CONFIG(sampleRate),
       .slot_cfg = I2S_PDM_RX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
-      .gpio_cfg = {
-          .clk = clkPin,
-          .din = dataPin,
-      },
+    .gpio_cfg = {
+      .clk = static_cast<gpio_num_t>(clkPin),
+      .din = static_cast<gpio_num_t>(dataPin),
+    },
   };
   pdmConfig.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
   pdmConfig.slot_cfg.slot_mode = I2S_SLOT_MODE_MONO;
