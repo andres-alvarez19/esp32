@@ -78,8 +78,7 @@ void App::update() {
     Serial.printf("  Microfono presente: %s\n", _data.hasNoise ? "si" : "no");
     printFloat("    Noise dB SPL", _data.noiseDb);
 
-    _ubi.addEnv(_data);
-    _ubi.publish();
+  _ubi.addEnv(_data);
     _oled.draw(_data, 2000.0f);
     _lastPublish = millis();
   }

@@ -34,17 +34,29 @@ bool UbidotsClient::begin() {
   _ubi.setup();
   _ubi.reconnect();
 
+  // Configurar cliente MQTT (PubSubClient) sobre WiFiClient
+  _mqtt.setServer(UBIDOTS_HOST, UBIDOTS_PORT);
+
   return true;
 }
 
 void UbidotsClient::addEnv(const EnvData& d) {
   int added = 0;
+  // Construir JSON manualmente para poder mostrarlo antes de enviarlo
+  String payload = "{";
   auto addIf = [&](const char* name, float v) {
     if (!isfinite(v)) {
       Serial.printf("[UBI] Skipping %s => NaN\n", name);
       return;
     }
     Serial.printf("[UBI] Adding %s => %.2f\n", name, v);
+    if (added > 0) payload += ",";
+    payload += "\"";
+    payload += name;
+    payload += "\":";
+    // Agregar como número simple (Ubidots acepta {"var": 123} o {"var": {"value":123}})
+    payload += String(v, 2);
+    // También añadir a la estructura interna de la librería para compatibilidad
     _ubi.add(name, v);
     ++added;
   };
@@ -77,10 +89,106 @@ void UbidotsClient::addEnv(const EnvData& d) {
     Serial.println("[UBI] Microfono no presente, skipping noise dB");
   }
 
+  payload += "}";
+  _lastPayloadJson = payload;
   Serial.printf("[UBI] Total variables añadidas al payload: %d\n", added);
+  Serial.printf("[UBI] Payload JSON pre-envío: %s\n", _lastPayloadJson.c_str());
+  // Si el payload es grande, podemos dividirlo en dos publicaciones: ambientales y gas/ruido
+  const size_t kMaxSingle = 512;
+  if (_lastPayloadJson.length() > kMaxSingle) {
+    Serial.println("[UBI] Payload grande, intentando dividir en dos publicaciones");
+    // Construir dos payloads simples: env (BME + lux) y gas/noise (SGP30 + noise)
+    String envPayload = "{";
+    String gasPayload = "{";
+    int envCount = 0;
+    int gasCount = 0;
+    auto splitAdd = [&](const char* name, float v, bool toEnv) {
+      if (!isfinite(v)) return;
+      if (toEnv) {
+        if (envCount > 0) envPayload += ",";
+        envPayload += "\"" + String(name) + "\":" + String(v, 2);
+        ++envCount;
+      } else {
+        if (gasCount > 0) gasPayload += ",";
+        gasPayload += "\"" + String(name) + "\":" + String(v, 2);
+        ++gasCount;
+      }
+    };
+    if (d.hasBme) {
+      splitAdd(VAR_TEMP, d.temp, true);
+      splitAdd(VAR_HUM, d.hum, true);
+      splitAdd(VAR_PRESS, d.press, true);
+      splitAdd(VAR_ALT, d.alt, true);
+    }
+    if (d.hasCcs) {
+      splitAdd(VAR_CO2_PPM, d.eco2, false);
+      splitAdd(VAR_TVOC_PPB, d.tvoc, false);
+    }
+    if (d.hasLight) {
+      splitAdd(VAR_LUX, d.lux, true);
+    }
+    if (d.hasNoise) {
+      splitAdd(VAR_NOISE_DB, d.noiseDb, false);
+    }
+    envPayload += "}";
+    gasPayload += "}";
+    if (envCount > 0) publishUbi(DEVICE_LABEL, envPayload);
+    if (gasCount > 0) publishUbi(DEVICE_LABEL, gasPayload);
+  } else {
+    // Publicar el JSON completo
+    publishUbi(DEVICE_LABEL, _lastPayloadJson);
+  }
+}
+
+String UbidotsClient::makeClientId() {
+  String base = DEVICE_LABEL;
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  uint32_t r = esp_random();
+  String rnd = String(r, HEX);
+  // Asegurar al menos 20 caracteres: base + '-' + mac + rnd
+  return base + "-" + mac + rnd;
+}
+
+bool UbidotsClient::publishUbi(const char* deviceLabel, const String& json) {
+  String topic = String("/v1.6/devices/") + deviceLabel;
+  Serial.printf("[MQTT] Publicando en topic %s payload=%s\n", topic.c_str(), json.c_str());
+  // Asegurarse de estar conectado
+  if (!_mqtt.connected()) {
+    Serial.println("[MQTT] No conectado, intentando conectar...");
+    bool connected = _mqtt.connect(makeClientId().c_str(), UBIDOTS_TOKEN, "");
+    Serial.printf("[MQTT] Conectado? %d\n", connected);
+    if (!connected) {
+      // volver a intentar con la librería Ubidots (fallback)
+      _ubi.reconnect();
+    }
+  }
+  bool ok = false;
+  if (_mqtt.connected()) {
+    // PubSubClient publish devuelve bool, QoS depende de la librería; PubSubClient no soporta QoS1 en publish simple
+    ok = _mqtt.publish(topic.c_str(), json.c_str());
+  } else {
+    // fallback a la librería Ubidots (que ya tiene publish)
+    Serial.println("[MQTT] Usando fallback _ubi.publish() (librería Ubidots)");
+    ok = _ubi.publish(deviceLabel);
+  }
+
+  if (!ok) {
+    Serial.println("[MQTT] Publicación fallida, intento reconectar y reintentar una vez");
+    if (!_mqtt.connected()) {
+      bool rc = _mqtt.connect(makeClientId().c_str(), UBIDOTS_TOKEN, "");
+      Serial.printf("[MQTT] Reconnected? %d\n", rc);
+    }
+    if (_mqtt.connected()) {
+      ok = _mqtt.publish(topic.c_str(), json.c_str());
+      Serial.printf("[MQTT] Reintento -> %d\n", ok);
+    }
+  }
+  return ok;
 }
 
 bool UbidotsClient::publish() {
+  Serial.printf("[MQTT] Publicando payload: %s\n", _lastPayloadJson.c_str());
   bool ok = _ubi.publish(DEVICE_LABEL);
   if (ok) {
     Serial.println("[MQTT] Publicado OK");

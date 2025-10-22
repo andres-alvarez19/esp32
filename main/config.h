@@ -11,9 +11,13 @@
 // Port: 1883 (no TLS) or 8883 (TLS recommended)
 #define UBIDOTS_HOST  "industrial.api.ubidots.com"
 #define UBIDOTS_PORT  1883
-// Note: enabling TLS requires support in the Ubidots library; this flag is
-// informational unless the library exposes an API to enable TLS.
-#define UBIDOTS_USE_TLS 1
+// Note: enabling TLS requires support in the Ubidots library; set to 0 to
+// disable TLS (use plain MQTT on port 1883).
+#define UBIDOTS_USE_TLS 0
+
+// Increase MQTT buffers to allow larger payloads
+#define MQTT_MAX_PACKET_SIZE 1024
+#define MQTT_KEEPALIVE 60
 
 #define VAR_TEMP      "bme_temp_c"
 #define VAR_HUM       "bme_hum_pct"
