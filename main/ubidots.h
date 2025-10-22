@@ -6,8 +6,8 @@
 class UbidotsClient {
  public:
   explicit UbidotsClient(const char* token = UBIDOTS_TOKEN)
-  : _ubi(token, "stem.ubidots.com", 1883) {}
-  void begin();
+  : _ubi(token, UBIDOTS_HOST, UBIDOTS_PORT) {}
+  bool begin();
   void loop() { _ubi.loop(); }
   void addEnv(const EnvData& d);
   bool publish();
