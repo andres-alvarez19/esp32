@@ -32,10 +32,6 @@ bool SPM1423Sensor::begin(i2s_port_t port, int sampleRate, int clkPin, int dataP
       .gpio_cfg = {
           .clk = clkPin,
           .din = dataPin,
-          .invert_flags = {
-              .clk_inv = false,
-              .din_inv = false,
-          },
       },
   };
   pdmConfig.slot_cfg.slot_mask = I2S_PDM_SLOT_LEFT;
