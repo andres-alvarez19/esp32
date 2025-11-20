@@ -9,10 +9,11 @@ bool BME280Sensor::begin(uint8_t addrPrimary, uint8_t addrAlt) {
 }
 
 void BME280Sensor::read(EnvData& out) {
+  out.hasBme = false;
+  out.temp = NAN;
+  out.hum  = NAN;
   if (!_ok) return;
   out.hasBme = true;
   out.temp = _bme.readTemperature();
   out.hum  = _bme.readHumidity();
-  out.press = _bme.readPressure() / 100.0F;
-  out.alt   = _bme.readAltitude(1013.25);
 }

@@ -194,8 +194,6 @@ void App::update() {
     Serial.printf("  BME presente: %s\n", _data.hasBme ? "si" : "no");
     printFloat("    Temp (C)", _data.temp);
     printFloat("    Hum (%)", _data.hum);
-    printFloat("    Press (hPa)", _data.press);
-    printFloat("    Alt (m)", _data.alt);
 
     Serial.printf("  SGP30 (gas) presente: %s\n", _data.hasCcs ? "si" : "no");
     printFloat("    eCO2 (ppm)", _data.eco2);
@@ -285,8 +283,6 @@ void UbidotsClient::addEnv(const EnvData& d) {
   if (d.hasBme) {
     _ubi.add(VAR_TEMP, d.temp);
     _ubi.add(VAR_HUM,  d.hum);
-    _ubi.add(VAR_PRESS, d.press);
-    _ubi.add(VAR_ALT, d.alt);
   }
   if (d.hasCcs) {
     _ubi.add(VAR_CO2_PPM, d.eco2);
@@ -503,8 +499,6 @@ struct EnvData {
   bool hasNoise = false;
   float temp = NAN;
   float hum  = NAN;
-  float press = NAN;
-  float alt   = NAN;
   float eco2  = NAN;
   float tvoc  = NAN;
   float lux   = NAN;

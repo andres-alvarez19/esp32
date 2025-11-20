@@ -2,6 +2,15 @@
 #include <Arduino.h>
 
 bool OledView::begin(uint8_t addr) {
+  // Verificar si responde en el bus I2C antes de inicializar la libreria
+  Wire.beginTransmission(addr);
+  uint8_t err = Wire.endTransmission();
+  if (err != 0) {
+    Serial.printf("[OLED] No detectado en 0x%02X (err=%u)\n", addr, err);
+    _ok = false;
+    return false;
+  }
+
   _ok = _disp.begin(SSD1306_SWITCHCAPVCC, addr);
   if (_ok) {
     _disp.clearDisplay();
@@ -34,17 +43,17 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
   // cycle pages every 1500 ms. Taller displays show all variables at size 2.
   _disp.setTextSize(2);
   if (height <= 32) {
-    // 7 variables + placeholder to place LUX in bottom-right: indices 0..7
-  const char* labels[8] = {"T","H","P","CO2","TVOC","","dB","LUX"};
+    // 6 variables + placeholders to align paging: indices 0..7
+    const char* labels[8] = {"T","H","CO2","TVOC","","dB","LUX",""};
     String values[8];
     values[0] = fmt(d.temp);
     values[1] = fmt(d.hum);
-    values[2] = fmt(d.press);
-    values[3] = fmt(d.eco2);
-    values[4] = fmt(d.tvoc);
+    values[2] = fmt(d.eco2);
+    values[3] = fmt(d.tvoc);
+    values[4] = String("");
     values[5] = d.hasNoise ? fmt(d.noiseDb) : String("--");
-    values[6] = String("");
-    values[7] = d.hasLight ? fmt(d.lux) : String("--");
+    values[6] = d.hasLight ? fmt(d.lux) : String("--");
+    values[7] = String("");
 
     // Paging: 4 items per page (2 cols x 2 rows), page 0: 0-3, page 1: 4-7
     static uint8_t page = 0;
@@ -75,18 +84,18 @@ void OledView::draw(const EnvData& d, float co2MaxPpm) {
     }
   } else {
     // Taller displays (128x64) -> pair rows: left/right columns with last row for LUX
-  const char* leftLabels[4] = {"T","H","P","dB"};
-  const char* rightLabels[4] = {"CO2","TVOC","","LUX"};
-  String leftValues[4];
-  String rightValues[4];
-  leftValues[0] = fmt(d.temp) + String("C");
-  leftValues[1] = fmt(d.hum) + String("%");
-  leftValues[2] = fmt(d.press);
-  leftValues[3] = d.hasNoise ? fmt(d.noiseDb) : String("--");
-  rightValues[0] = fmt(d.eco2);
-  rightValues[1] = fmt(d.tvoc);
-  rightValues[2] = String("");
-  rightValues[3] = d.hasLight ? fmt(d.lux) : String("--");
+    const char* leftLabels[4] = {"T","H","dB",""};
+    const char* rightLabels[4] = {"CO2","TVOC","","LUX"};
+    String leftValues[4];
+    String rightValues[4];
+    leftValues[0] = fmt(d.temp) + String("C");
+    leftValues[1] = fmt(d.hum) + String("%");
+    leftValues[2] = d.hasNoise ? fmt(d.noiseDb) : String("--");
+    leftValues[3] = String("");
+    rightValues[0] = fmt(d.eco2);
+    rightValues[1] = fmt(d.tvoc);
+    rightValues[2] = String("");
+    rightValues[3] = d.hasLight ? fmt(d.lux) : String("--");
 
     int mid = width / 2;
     for (int r = 0; r < 4; ++r) {

@@ -17,8 +17,12 @@ float SGP30Sensor::absoluteHumidity_mg_m3(float tC, float rh) {
 }
 
 void SGP30Sensor::read(EnvData& io, float tempC, float humPct) {
-  if (!_ok) return;
-  io.hasCcs = true;
+  if (!_ok) {
+    io.hasCcs = false;
+    io.eco2 = NAN;
+    io.tvoc = NAN;
+    return;
+  }
 
   float ah = absoluteHumidity_mg_m3(tempC, humPct);
   if (isfinite(ah)) _sgp.setHumidity((uint32_t)lroundf(ah));
@@ -27,9 +31,9 @@ void SGP30Sensor::read(EnvData& io, float tempC, float humPct) {
   if (now - _lastIAQ < SGP_IAQ_MS) return;
 
   if (_sgp.IAQmeasure()) {
+    io.hasCcs = true;
     io.eco2 = (float)_sgp.eCO2;
     io.tvoc = (float)_sgp.TVOC;
-    Serial.printf("[SGP30] eCO2=%.0f ppm, TVOC=%.0f ppb\n", io.eco2, io.tvoc);
   } else {
     Serial.println("[SGP30] Lectura fallida");
   }

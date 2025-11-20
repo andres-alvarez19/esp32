@@ -8,8 +8,6 @@ struct EnvData {
   bool hasNoise = false;
   float temp = NAN;
   float hum  = NAN;
-  float press = NAN;
-  float alt   = NAN;
   float eco2  = NAN;   
   float tvoc  = NAN;    
   float lux   = NAN;     

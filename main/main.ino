@@ -22,11 +22,16 @@ void setup() {
   digitalWrite(LED_VERDE_PIN, LOW);
   digitalWrite(LED_ROJO_PIN, LOW);
 
-  bool buzzerReady = buzzer.begin();
+  bool buzzerReady = false;
   String failed = "";
-  if (!buzzerReady) {
-    failed = "Buzzer";
-    Serial.println("[MAIN] Error al iniciar Buzzer");
+  if (BUZZER_ENABLED) {
+    buzzerReady = buzzer.begin();
+    if (!buzzerReady) {
+      failed = "Buzzer";
+      Serial.println("[MAIN] Error al iniciar Buzzer");
+    }
+  } else {
+    Serial.println("[MAIN] Buzzer deshabilitado (BUZZER_ENABLED=0)");
   }
 
   bool modulesOk = app.begin();
@@ -56,12 +61,12 @@ void loop() {
   app.update();
 
   bool sensorsReady = app.modulesReady();
-  bool buzzerReady = buzzer.isReady();
+  bool buzzerReady = BUZZER_ENABLED ? buzzer.isReady() : true;
 
   if (!sensorsReady || !buzzerReady) {
     digitalWrite(LED_ROJO_PIN, HIGH);
     digitalWrite(LED_VERDE_PIN, LOW);
-    buzzer.off();
+    if (BUZZER_ENABLED) buzzer.off();
     return;
   }
 
@@ -71,10 +76,10 @@ void loop() {
   if (alert) {
     digitalWrite(LED_ROJO_PIN, HIGH);
     digitalWrite(LED_VERDE_PIN, LOW);
-    buzzer.on();
+    if (BUZZER_ENABLED) buzzer.on();
   } else {
     digitalWrite(LED_ROJO_PIN, LOW);
     digitalWrite(LED_VERDE_PIN, HIGH);
-    buzzer.off();
+    if (BUZZER_ENABLED) buzzer.off();
   }
 }
