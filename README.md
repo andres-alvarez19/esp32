@@ -2,7 +2,7 @@
 
 ## 📘 Descripción general
 
-El proyecto implementa un sistema de monitoreo ambiental IoT basado en un **ESP-WROOM-32**, que mide **temperatura, humedad, presión, CO₂, compuestos orgánicos volátiles (TVOC), luminosidad** y **contaminación acústica**, mostrando los datos en un display **OLED SSD1306** y enviándolos a **Ubidots STEM** mediante **MQTT**.
+El proyecto implementa un sistema de monitoreo ambiental IoT basado en un **ESP-WROOM-32**, que mide **temperatura, humedad, presión, CO₂, compuestos orgánicos volátiles (TVOC), luminosidad** y **contaminación acústica**, mostrando los datos en un display **OLED SSD1306** y enviándolos a **Thingsboard** mediante **MQTT**.
 
 Se estructura de forma modular, donde cada sensor o servicio está encapsulado en su propio archivo fuente (`.h` / `.cpp`), facilitando mantenimiento, pruebas y futuras expansiones (por ejemplo, añadir sensores nuevos o cambiar el broker MQTT).
 
@@ -57,8 +57,8 @@ Proyecto-ESP32/
 ├── spm1423.cpp
 ├── oled.h
 ├── oled.cpp
-├── ubidots.h
-├── ubidots.cpp
+├── thingsboard.h
+├── thingsboard.cpp
 ├── config.h
 ├── pins.h
 └── (otros futuros módulos opcionales)
@@ -193,7 +193,8 @@ Instaladas desde el **Library Manager de Arduino IDE**:
 * Adafruit GFX Library
 * BH1750
 * driver/i2s *(para el micrófono SPM1423)*
-* UbidotsEsp32Mqtt
+* arduinojson
+* thingsboard
 * WiFi.h
 * PubSubClient
 
@@ -208,5 +209,5 @@ Instaladas desde el **Library Manager de Arduino IDE**:
 ---
 
 💎 **Autor:** Andrés Álvarez Morales
-🗓 **Versión:** Octubre 2025
-📡 **Plataforma:** ESP-WROOM-32 + Ubidots STEM
+🗓 **Versión:** Noviembre 2025
+📡 **Plataforma:** ESP-WROOM-32 + Thingsboard (Ufro Host)
