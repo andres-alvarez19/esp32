@@ -70,6 +70,11 @@ void loop() {
     return;
   }
 
+  // Si ThingsBoard envía control remoto de indicadores, no sobrescribirlos
+  if (app.indicatorsManagedByRpc()) {
+    return;
+  }
+
   const EnvData& data = app.data();
   bool alert = std::isfinite(data.eco2) && data.eco2 > kCo2AlertThreshold;
 

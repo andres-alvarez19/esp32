@@ -43,8 +43,20 @@ bool App::begin() {
   return _modulesReady;
 }
 
+void App::registerBuzzer(ActiveBuzzer* buzzer) {
+  _tb.setIndicatorsHardware(LED_VERDE_PIN, LED_ROJO_PIN, buzzer);
+}
+
 void App::update() {
   _tb.loop();
+
+  static unsigned long lastOledDraw = 0;
+  const unsigned long oledIntervalMs = 500;
+  unsigned long now = millis();
+  if (now - lastOledDraw >= oledIntervalMs) {
+    _oled.drawStatus(_tb.statusMessage());
+    lastOledDraw = now;
+  }
 
   if (!_modulesReady) {
     static bool warned = false;
@@ -118,6 +130,5 @@ void App::update() {
                 fmt(_data.lux).c_str(), fmt(_data.noiseDb).c_str());
   _tb.sendEnv(_data);
 
-  _oled.draw(_data, 2000.0f);
   _lastPublish = millis();
 }

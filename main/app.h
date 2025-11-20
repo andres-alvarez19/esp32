@@ -10,6 +10,7 @@
 #include "spm1423.h"
 #include "oled.h"
 #include "thingsboard.h"
+#include "pins.h"
 
 // Declaración adelantada para poder usar el puntero sin incluir buzzer.h aquí
 class ActiveBuzzer;
@@ -19,10 +20,11 @@ class App {
   App() : _tb(_wifiClient) {}
   bool begin();
   void update();
-  void registerBuzzer(ActiveBuzzer* /*buzzer*/) { /* reservado para futuras callbacks MQTT */ }
+  void registerBuzzer(ActiveBuzzer* buzzer);
   bool modulesReady() const { return _modulesReady; }
   const EnvData& data() const { return _data; }
   const String& failedModules() const { return _failedModules; }
+  bool indicatorsManagedByRpc() const { return _tb.indicatorsManagedByRpc(); }
 
  private:
   BME280Sensor _bme;

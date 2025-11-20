@@ -1,0 +1,617 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": "Reglas de alarmas IAQ para ESP32 (temperatura, humedad, CO2, TVOC, luz y ruido)."
+    },
+    "name": "ESP32 IAQ Alarms",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": true,
+    "configuration": null,
+    "externalId": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "Deja pasar solo POST_TELEMETRY_REQUEST",
+          "layoutX": 100,
+          "layoutY": 100
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Is telemetry (POST_TELEMETRY_REQUEST)",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "messageTypes": [
+            "POST_TELEMETRY_REQUEST"
+          ]
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Temperatura fuera de 20–25°C",
+          "layoutX": 350,
+          "layoutY": 40
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TEMP_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.bme_temp_c != null && (msg.bme_temp_c < 20 || msg.bme_temp_c > 25);"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma de temperatura fuera de rango",
+          "layoutX": 650,
+          "layoutY": 40
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TEMP_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "TEMP_OUT_OF_RANGE",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Humedad fuera de 40–60%",
+          "layoutX": 350,
+          "layoutY": 90
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "HUM_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.bme_hum_pct != null && (msg.bme_hum_pct < 40 || msg.bme_hum_pct > 60);"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma de humedad fuera de rango",
+          "layoutX": 650,
+          "layoutY": 90
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create HUM_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "HUM_OUT_OF_RANGE",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "CO2 entre 800 y 1200 ppm (Regular)",
+          "layoutX": 350,
+          "layoutY": 140
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_REGULAR",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 800 && msg.sgp30_eco2_ppm <= 1200;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma CO2 Regular",
+          "layoutX": 650,
+          "layoutY": 140
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_REGULAR",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "CO2_REGULAR",
+          "severity": "MINOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "CO2 entre 1200 y 2000 ppm (Malo)",
+          "layoutX": 350,
+          "layoutY": 190
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_BAD",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 1200 && msg.sgp30_eco2_ppm <= 2000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma CO2 Malo",
+          "layoutX": 650,
+          "layoutY": 190
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_BAD",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "CO2_BAD",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "CO2 > 2000 ppm (Peligroso)",
+          "layoutX": 350,
+          "layoutY": 240
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_DANGEROUS",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 2000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma CO2 Peligroso",
+          "layoutX": 650,
+          "layoutY": 240
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_DANGEROUS",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "CO2_DANGEROUS",
+          "severity": "CRITICAL",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "TVOC 300–600 ppb (Regular)",
+          "layoutX": 350,
+          "layoutY": 290
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TVOC_REGULAR",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.sgp30_tvoc_ppb != null && msg.sgp30_tvoc_ppb >= 300 && msg.sgp30_tvoc_ppb <= 600;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma TVOC Regular",
+          "layoutX": 650,
+          "layoutY": 290
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TVOC_REGULAR",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "TVOC_REGULAR",
+          "severity": "MINOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "TVOC > 600 ppb (Alto)",
+          "layoutX": 350,
+          "layoutY": 340
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TVOC_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.sgp30_tvoc_ppb != null && msg.sgp30_tvoc_ppb > 600;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma TVOC Alto",
+          "layoutX": 650,
+          "layoutY": 340
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TVOC_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "TVOC_HIGH",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Iluminancia < 150 lux (Baja)",
+          "layoutX": 350,
+          "layoutY": 390
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "LUX_LOW",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.bh1750_lux != null && msg.bh1750_lux < 150;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma luminosidad baja",
+          "layoutX": 650,
+          "layoutY": 390
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create LUX_LOW",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "LUX_LOW",
+          "severity": "MINOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Iluminancia > 1000 lux (Muy alta)",
+          "layoutX": 350,
+          "layoutY": 440
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "LUX_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.bh1750_lux != null && msg.bh1750_lux > 1000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma luminosidad muy alta",
+          "layoutX": 650,
+          "layoutY": 440
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create LUX_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "LUX_HIGH",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Ruido 40–70 (moderado: música/TV)",
+          "layoutX": 350,
+          "layoutY": 490
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_MODERATE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db >= 40 && msg.spm1423_noise_db <= 70;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma ruido moderado",
+          "layoutX": 650,
+          "layoutY": 490
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_MODERATE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "NOISE_MODERATE",
+          "severity": "MINOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Ruido 70–80 (Alto)",
+          "layoutX": 350,
+          "layoutY": 540
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db > 70 && msg.spm1423_noise_db < 80;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma ruido alto",
+          "layoutX": 650,
+          "layoutY": 540
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_HIGH",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "NOISE_HIGH",
+          "severity": "MAJOR",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      },
+
+      {
+        "additionalInfo": {
+          "description": "Ruido ≥ 80 (Golpe / impacto fuerte)",
+          "layoutX": 350,
+          "layoutY": 590
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_IMPACT",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db >= 80;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Crear alarma ruido por impacto",
+          "layoutX": 650,
+          "layoutY": 590
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_IMPACT",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "alarmDetailsBuildJs": "var details = {};\nif (metadata.prevAlarmDetails) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n    delete metadata.prevAlarmDetails;\n}\nreturn details;",
+          "alarmDetailsBuildTbel": "var details = {};\nif (metadata.prevAlarmDetails != null) {\n    details = JSON.parse(metadata.prevAlarmDetails);\n}\nreturn details;",
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false,
+          "alarmType": "NOISE_IMPACT",
+          "severity": "CRITICAL",
+          "propagate": false,
+          "relationTypes": [],
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "dynamicSeverity": false
+        },
+        "externalId": null
+      }
+    ],
+    "connections": [
+      { "fromIndex": 0, "toIndex": 1, "type": "True" },
+      { "fromIndex": 0, "toIndex": 3, "type": "True" },
+      { "fromIndex": 0, "toIndex": 5, "type": "True" },
+      { "fromIndex": 0, "toIndex": 7, "type": "True" },
+      { "fromIndex": 0, "toIndex": 9, "type": "True" },
+      { "fromIndex": 0, "toIndex": 11, "type": "True" },
+      { "fromIndex": 0, "toIndex": 13, "type": "True" },
+      { "fromIndex": 0, "toIndex": 15, "type": "True" },
+      { "fromIndex": 0, "toIndex": 17, "type": "True" },
+      { "fromIndex": 0, "toIndex": 19, "type": "True" },
+      { "fromIndex": 0, "toIndex": 21, "type": "True" },
+      { "fromIndex": 0, "toIndex": 23, "type": "True" },
+
+      { "fromIndex": 1, "toIndex": 2, "type": "True" },
+      { "fromIndex": 3, "toIndex": 4, "type": "True" },
+      { "fromIndex": 5, "toIndex": 6, "type": "True" },
+      { "fromIndex": 7, "toIndex": 8, "type": "True" },
+      { "fromIndex": 9, "toIndex": 10, "type": "True" },
+      { "fromIndex": 11, "toIndex": 12, "type": "True" },
+      { "fromIndex": 13, "toIndex": 14, "type": "True" },
+      { "fromIndex": 15, "toIndex": 16, "type": "True" },
+      { "fromIndex": 17, "toIndex": 18, "type": "True" },
+      { "fromIndex": 19, "toIndex": 20, "type": "True" },
+      { "fromIndex": 21, "toIndex": 22, "type": "True" },
+      { "fromIndex": 23, "toIndex": 24, "type": "True" }
+    ],
+    "ruleChainConnections": null
+  }
+}

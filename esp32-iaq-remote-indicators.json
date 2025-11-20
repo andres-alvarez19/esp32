@@ -1,0 +1,135 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": "Control remoto de LEDs y buzzer para ESP32 según calidad ambiental."
+    },
+    "name": "ESP32 IAQ Remote Indicators",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": true,
+    "configuration": null,
+    "externalId": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "description": "Deja pasar solo telemetría (POST_TELEMETRY_REQUEST)",
+          "layoutX": 100,
+          "layoutY": 100
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Is telemetry",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "messageTypes": [
+            "POST_TELEMETRY_REQUEST"
+          ]
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "TRUE si hay algún parámetro fuera de rango óptimo",
+          "layoutX": 350,
+          "layoutY": 100
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "ANY_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "var tempOk = msg.bme_temp_c == null || (msg.bme_temp_c >= 20 && msg.bme_temp_c <= 25);\nvar humOk  = msg.bme_hum_pct == null || (msg.bme_hum_pct >= 40 && msg.bme_hum_pct <= 60);\nvar co2Ok  = msg.sgp30_eco2_ppm == null || (msg.sgp30_eco2_ppm >= 400 && msg.sgp30_eco2_ppm <= 800);\nvar tvocOk = msg.sgp30_tvoc_ppb == null || (msg.sgp30_tvoc_ppb < 300);\nvar luxOk  = msg.bh1750_lux == null || (msg.bh1750_lux >= 300 && msg.bh1750_lux <= 500);\nvar noiseOk = msg.spm1423_noise_db == null || (msg.spm1423_noise_db < 40);\n\nvar allOk = tempOk && humOk && co2Ok && tvocOk && luxOk && noiseOk;\nreturn !allOk;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Transforma mensaje a RPC ALERTA (LED rojo + buzzer corto)",
+          "layoutX": 650,
+          "layoutY": 60
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformNode",
+        "name": "To ALERT RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return { msg: msg, metadata: metadata, msgType: msgType };",
+          "tbelScript": "var newMsg = {\n  method: \"setIndicators\",\n  params: {\n    ledGreen: false,\n    ledRed: true,\n    buzzerMs: 200\n  }\n};\n\nreturn {\n  msg: newMsg,\n  metadata: metadata,\n  msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Transforma mensaje a RPC OK (LED verde, sin buzzer)",
+          "layoutX": 650,
+          "layoutY": 140
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformNode",
+        "name": "To OK RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return { msg: msg, metadata: metadata, msgType: msgType };",
+          "tbelScript": "var newMsg = {\n  method: \"setIndicators\",\n  params: {\n    ledGreen: true,\n    ledRed: false,\n    buzzerMs: 0\n  }\n};\n\nreturn {\n  msg: newMsg,\n  metadata: metadata,\n  msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "description": "Envía RPC al dispositivo (setIndicators)",
+          "layoutX": 950,
+          "layoutY": 100
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "Send setIndicators RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 30
+        },
+        "externalId": null
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 3,
+        "type": "False"
+      },
+      {
+        "fromIndex": 2,
+        "toIndex": 4,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": null
+  }
+}

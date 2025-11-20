@@ -6,7 +6,7 @@
 class OledView {
  public:
   bool begin(uint8_t addr = 0x3C);
-  void draw(const EnvData& d, float co2MaxPpm);
+  void drawStatus(const String& status);
 
  private:
   Adafruit_SSD1306 _disp{128, 64, &Wire, -1};
