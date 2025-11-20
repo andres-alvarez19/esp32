@@ -1,4 +1,4 @@
-# 🧩 Proyecto ESP32 – Monitor Ambiental con Ubidots y OLED
+# 🧩 Proyecto ESP32 – Monitor Ambiental con Thingsboard y OLED
 
 ## 📘 Descripción general
 
@@ -21,11 +21,11 @@ Se estructura de forma modular, donde cada sensor o servicio está encapsulado e
 | **BH1750** (Sensor de luz)                  | Iluminancia            | lux    | `lux`                                      | Intensidad lumínica ambiental                          |
 | **SPM1423** (Micrófono digital)             | Nivel de ruido         | dB(A)  | `noiseDb`                                  | Nivel sonoro estimado en decibelios                    |
 
-Estas variables son publicadas periódicamente en Ubidots mediante etiquetas (`VAR_TEMP`, `VAR_HUM`, `VAR_CO2_PPM`, etc.) definidas en `config.h`.
+Estas variables son publicadas periódicamente en thingsboard mediante etiquetas (`VAR_TEMP`, `VAR_HUM`, `VAR_CO2_PPM`, etc.) definidas en `config.h`.
 ---
 # Proyecto ESP32 – Monitor Ambiental
 
-## Módulos y variables publicadas en Ubidots
+## Módulos y variables publicadas en thingsboard
 
 | Módulo / Sensor | Descripción | Variable (tag) MQTT |
 |-----------------|-------------|---------------------|
@@ -34,7 +34,6 @@ Estas variables son publicadas periódicamente en Ubidots mediante etiquetas (`V
 | BH1750          | Medición de iluminación en lux | `bh1750_lux` |
 | SPM1423         | Nivel de ruido estimado en dB SPL | `spm1423_noise_db` |
 
-Las etiquetas anteriores se encuentran definidas en `config.h` y se agregan a la carga MQTT mediante `UbidotsClient::addEnv` (`ubidots.cpp`). Cada lectura válida de un sensor se empaqueta con su tag correspondiente y se envía al broker con el identificador de dispositivo `esp_wroom_32`.
 ---
 
 ## 🗷️ Estructura del proyecto
@@ -87,7 +86,7 @@ void loop()  { app.loop(); }
 Coordinador general del sistema. Controla el ciclo completo:
 
 * Inicialización de sensores (`BME280Sensor`, `SGP30Sensor`, `BH1750Sensor`, `SPM1423Sensor`)
-* Configuración del WiFi y Ubidots
+* Configuración del WiFi y Thingsboard
 * Actualización del OLED
 * Publicación de datos en intervalos definidos
 
@@ -134,7 +133,7 @@ Cálculo del nivel sonoro en dB SPL (I2S).
 
 Muestra temperatura, humedad, CO₂, lux y estado de calidad del aire.
 
-### 🔹 ubidots.h / ubidots.cpp
+### 🔹 Thingsboard.h / Thingsboard.cpp
 
 Publica las variables al dashboard IoT mediante MQTT.
 
@@ -152,7 +151,7 @@ Define pines de hardware (LEDs, buzzer, I2C, etc.)
 
 1. **Inicialización** → Configura Wi-Fi, sensores, pantalla y MQTT.
 2. **Bucle principal** → Lee sensores (`BME280`, `SGP30`, `BH1750`, `SPM1423`).
-3. **Publicación** → Envía datos a Ubidots cada 5 s.
+3. **Publicación** → Envía datos a Thingsboard cada 5 s.
 4. **Visualización** → Actualiza OLED y LEDs.
 5. **MQTT** → Permite monitoreo y control remoto.
 
