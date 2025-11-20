@@ -175,9 +175,11 @@ Define pines de hardware (LEDs, buzzer, I2C, etc.)
 | **Iluminancia**      | lux    | 300–500      | Adecuada    | Ideal para oficinas                    |
 |                      |        | <150         | Baja        | Insuficiente                           |
 |                      |        | >1000        | Muy alta    | Riesgo de deslumbramiento              |
-| **Ruido (SPM1423)**  | dB(A)  | 30–50        | Silencioso  | Nivel típico de hogar                  |
-|                      |        | 50–70        | Moderado    | Conversación normal                    |
-|                      |        | >70          | Alto        | Fatiga auditiva o estrés               |
+| **Ruido (SPM1423)**  | Normalizada  | 5–20         | Silencioso  | Habitación tranquila                  |
+|                      |        | 20–50        | Moderado    | Conversación normal                    |
+|                      |        | 40–70          | Alto        | Música fuerte / TV              |
+|                      |        | 80–100           | Muy Alto        | Golpe o sonido fuerte cerca             |
+
 
 ---
 
