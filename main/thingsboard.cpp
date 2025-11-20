@@ -214,13 +214,49 @@ void ThingsboardClient::handleRpcMessage(const char* topic, const uint8_t* paylo
   bool ledRedOn = params["ledRed"] | false;
   unsigned long buzzerMs = params["buzzerMs"] | 0;
   const char* statusMsg = params["statusMessage"] | "OK";
+  const char* line1 = params["oledLine1"] | "";
+  const char* line2 = params["oledLine2"] | "";
 
-  Serial.printf("[TB] RPC setIndicators: ledGreen=%d ledRed=%d buzzerMs=%lu\n",
-                ledGreenOn, ledRedOn, buzzerMs);
+  Serial.printf("[TB] RPC setIndicators: ledGreen=%d ledRed=%d buzzerMs=%lu status='%s' line1='%s' line2='%s'\n",
+                ledGreenOn, ledRedOn, buzzerMs, statusMsg, line1, line2);
   _statusMessage = statusMsg;
+  _oledLine1 = line1;
+  _oledLine2 = line2;
 
-  applyIndicators(ledGreenOn, ledRedOn, buzzerMs);
+  // Sonar buzzer solo si cambian LEDs o texto
+  bool stateChanged = false;
+  if (!_hasLastRpcState) {
+    stateChanged = true;
+    _hasLastRpcState = true;
+  } else {
+    bool oledChanged = (_oledLine1 != _lastLine1) || (_oledLine2 != _lastLine2);
+    bool ledsChanged = (ledGreenOn != _lastLedGreen) || (ledRedOn != _lastLedRed);
+    stateChanged = oledChanged || ledsChanged;
+  }
+
+  unsigned long buzzerForApply = stateChanged ? buzzerMs : 0;
+  applyIndicators(ledGreenOn, ledRedOn, buzzerForApply);
   _rpcIndicators = true;
+
+  bool telemFromRpc = false;
+  // Actualizar valores para OLED si vienen en el payload RPC
+  if (!params["bme_temp_c"].isNull()) { _oledTempC = params["bme_temp_c"].as<float>(); telemFromRpc = true; }
+  if (!params["bme_hum_pct"].isNull()) { _oledHumPct = params["bme_hum_pct"].as<float>(); telemFromRpc = true; }
+  if (!params["sgp30_eco2_ppm"].isNull()) { _oledEco2Ppm = params["sgp30_eco2_ppm"].as<float>(); telemFromRpc = true; }
+  if (!params["sgp30_tvoc_ppb"].isNull()) { _oledTvocPpb = params["sgp30_tvoc_ppb"].as<float>(); telemFromRpc = true; }
+  if (!params["bh1750_lux"].isNull()) { _oledLux = params["bh1750_lux"].as<float>(); telemFromRpc = true; }
+  if (!params["spm1423_noise_db"].isNull()) { _oledNoiseDb = params["spm1423_noise_db"].as<float>(); telemFromRpc = true; }
+
+  if (telemFromRpc) {
+    Serial.printf("[TB] RPC telemetria->OLED T=%.1fC H=%.1f%% eCO2=%.0fppm TVOC=%.0fppb Lux=%.0f Noise=%.1fdB\n",
+                  _oledTempC, _oledHumPct, _oledEco2Ppm, _oledTvocPpb, _oledLux, _oledNoiseDb);
+  }
+
+  // Guardar estado previo para la próxima comparación
+  _lastLine1 = _oledLine1;
+  _lastLine2 = _oledLine2;
+  _lastLedGreen = ledGreenOn;
+  _lastLedRed = ledRedOn;
 }
 
 void ThingsboardClient::applyIndicators(bool ledGreenOn, bool ledRedOn,

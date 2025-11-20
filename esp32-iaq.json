@@ -1,0 +1,742 @@
+{
+  "ruleChain": {
+    "additionalInfo": {
+      "description": "Reglas completas de alarmas y control remoto de indicadores para ESP32 (temperatura, humedad, CO2, TVOC, luz y ruido)."
+    },
+    "name": "ESP32 IAQ Complete",
+    "type": "CORE",
+    "firstRuleNodeId": null,
+    "root": false,
+    "debugMode": true,
+    "configuration": null,
+    "externalId": null
+  },
+  "metadata": {
+    "firstNodeIndex": 0,
+    "nodes": [
+      {
+        "additionalInfo": {
+          "layoutX": 167,
+          "layoutY": 88
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbMsgTypeFilterNode",
+        "name": "Is telemetry (POST_TELEMETRY_REQUEST)",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "messageTypes": [
+            "POST_TELEMETRY_REQUEST"
+          ]
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": -76
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TEMP_OUT_OF_RANGE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.temperature < 20 || msg.temperature > 25;",
+          "tbelScript": "return msg.bme_temp_c != null && (msg.bme_temp_c < 20 || msg.bme_temp_c > 25);"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": -76
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TEMP_OUT_OF_RANGE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "TEMP_OUT_OF_RANGE",
+          "alarmDetails": {
+            "severity": "MAJOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 88
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "HUM_OUT_OF_RANGE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.humidity < 40 || msg.humidity > 60;",
+          "tbelScript": "return msg.bme_hum_pct != null && (msg.bme_hum_pct < 40 || msg.bme_hum_pct > 60);"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 88
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create HUM_OUT_OF_RANGE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "HUM_OUT_OF_RANGE",
+          "alarmDetails": {
+            "severity": "MAJOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 252
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_REGULAR",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.co2 >= 800 && msg.co2 <= 1200;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 800 && msg.sgp30_eco2_ppm <= 1200;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 252
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_REGULAR",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "CO2_REGULAR",
+          "alarmDetails": {
+            "severity": "MINOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 416
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_BAD",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.co2 > 1200 && msg.co2 <= 2000;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 1200 && msg.sgp30_eco2_ppm <= 2000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 416
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_BAD",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "CO2_BAD",
+          "alarmDetails": {
+            "severity": "MAJOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 580
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "CO2_DANGEROUS",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.co2 > 2000;",
+          "tbelScript": "return msg.sgp30_eco2_ppm != null && msg.sgp30_eco2_ppm > 2000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 580
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create CO2_DANGEROUS",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "CO2_DANGEROUS",
+          "alarmDetails": {
+            "severity": "CRITICAL",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 744
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TVOC_REGULAR",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.tvoc >= 300 && msg.tvoc <= 600;",
+          "tbelScript": "return msg.sgp30_tvoc_ppb != null && msg.sgp30_tvoc_ppb >= 300 && msg.sgp30_tvoc_ppb <= 600;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 744
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TVOC_REGULAR",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "TVOC_REGULAR",
+          "alarmDetails": {
+            "severity": "MINOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 908
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "TVOC_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.tvoc > 600;",
+          "tbelScript": "return msg.sgp30_tvoc_ppb != null && msg.sgp30_tvoc_ppb > 600;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 908
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create TVOC_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "TVOC_HIGH",
+          "alarmDetails": {
+            "severity": "MAJOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 1072
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "LUX_LOW",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.lux < 150;",
+          "tbelScript": "return msg.bh1750_lux != null && msg.bh1750_lux < 150;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 1072
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create LUX_LOW",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "LUX_LOW",
+          "alarmDetails": {
+            "severity": "MINOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 1236
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "LUX_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.lux > 1000;",
+          "tbelScript": "return msg.bh1750_lux != null && msg.bh1750_lux > 1000;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 1236
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create LUX_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "LUX_HIGH",
+          "alarmDetails": {
+            "severity": "MINOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 1400
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_MODERATE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.noise >= 40 && msg.noise <= 70;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db >= 40 && msg.spm1423_noise_db <= 70;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 1400
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_MODERATE",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "NOISE_MODERATE",
+          "alarmDetails": {
+            "severity": "MINOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 1564
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.noise > 70 && msg.noise < 80;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db > 70 && msg.spm1423_noise_db < 80;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 1564
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_HIGH",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "NOISE_HIGH",
+          "alarmDetails": {
+            "severity": "MAJOR",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 398,
+          "layoutY": 1728
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "NOISE_IMPACT",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return msg.noise >= 80;",
+          "tbelScript": "return msg.spm1423_noise_db != null && msg.spm1423_noise_db >= 80;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 629,
+          "layoutY": 1728
+        },
+        "type": "org.thingsboard.rule.engine.action.TbCreateAlarmNode",
+        "name": "Create NOISE_IMPACT",
+        "debugMode": false,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "alarmType": "NOISE_IMPACT",
+          "alarmDetails": {
+            "severity": "CRITICAL",
+            "status": "ACTIVE_UNACK"
+          },
+          "propagate": false,
+          "propagateToOwner": false,
+          "propagateToTenant": false,
+          "useMessageAlarmData": false,
+          "overwriteAlarmDetails": false
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 920,
+          "layoutY": 820
+        },
+        "type": "org.thingsboard.rule.engine.filter.TbJsFilterNode",
+        "name": "ANY_OUT_OF_RANGE",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "TBEL",
+          "jsScript": "return true;",
+          "tbelScript": "var tempOk = msg.bme_temp_c == null || (msg.bme_temp_c >= 20 && msg.bme_temp_c <= 25);\nvar humOk  = msg.bme_hum_pct == null || (msg.bme_hum_pct >= 40 && msg.bme_hum_pct <= 60);\nvar co2Ok  = msg.sgp30_eco2_ppm == null || (msg.sgp30_eco2_ppm >= 400 && msg.sgp30_eco2_ppm <= 800);\nvar tvocOk = msg.sgp30_tvoc_ppb == null || (msg.sgp30_tvoc_ppb < 300);\nvar luxOk  = msg.bh1750_lux == null || (msg.bh1750_lux >= 300 && msg.bh1750_lux <= 500);\nvar noiseOk = msg.spm1423_noise_db == null || (msg.spm1423_noise_db < 40);\nvar allOk = tempOk && humOk && co2Ok && tvocOk && luxOk && noiseOk;\nreturn !allOk;"
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 1227,
+          "layoutY": 776
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformNode",
+        "name": "To ALERT RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// Reutilizar las mismas condiciones del filtro ANY_OUT_OF_RANGE\nvar tempOk  = msg.bme_temp_c == null || (msg.bme_temp_c >= 20 && msg.bme_temp_c <= 25);\nvar humOk   = msg.bme_hum_pct == null || (msg.bme_hum_pct >= 40 && msg.bme_hum_pct <= 60);\nvar co2Ok   = msg.sgp30_eco2_ppm == null || (msg.sgp30_eco2_ppm >= 400 && msg.sgp30_eco2_ppm <= 800);\nvar tvocOk  = msg.sgp30_tvoc_ppb == null || (msg.sgp30_tvoc_ppb < 300);\nvar luxOk   = msg.bh1750_lux == null || (msg.bh1750_lux >= 300 && msg.bh1750_lux <= 500);\nvar noiseOk = msg.spm1423_noise_db == null || (msg.spm1423_noise_db < 40);\n\n// Construir lista de fallas reales\nvar issues = [];\n\nif (!tempOk) {\n  if (msg.bme_temp_c < 20) {\n    issues.push(\"TEMP BAJA\");\n  } else if (msg.bme_temp_c > 25) {\n    issues.push(\"TEMP ALTA\");\n  }\n}\n\nif (!humOk) {\n  if (msg.bme_hum_pct < 40) {\n    issues.push(\"HUM BAJA\");\n  } else if (msg.bme_hum_pct > 60) {\n    issues.push(\"HUM ALTA\");\n  }\n}\n\nif (!co2Ok) {\n  if (msg.sgp30_eco2_ppm < 400) {\n    issues.push(\"CO2 BAJO\");\n  } else if (msg.sgp30_eco2_ppm > 800) {\n    issues.push(\"CO2 ALTO\");\n  }\n}\n\nif (!tvocOk) {\n  issues.push(\"TVOC ALTO\");\n}\n\nif (!luxOk) {\n  if (msg.bh1750_lux < 300) {\n    issues.push(\"LUZ BAJA\");\n  } else if (msg.bh1750_lux > 500) {\n    issues.push(\"LUZ ALTA\");\n  }\n}\n\nif (!noiseOk) {\n  issues.push(\"RUIDO ALTO\");\n}\n\n// Selección final para OLED (máx 2 líneas cortas)\nvar line1 = \"ALERTA\";\nvar line2 = \"REVISA SALA\";\n\nif (issues.length === 1) {\n  line1 = issues[0];\n  line2 = \"\";\n} else if (issues.length >= 2) {\n  line1 = issues[0];\n  line2 = issues[1];\n}\n\n// RPC final\nvar newMsg = {\n  method: \"setIndicators\",\n  params: {\n    ledGreen: false,\n    ledRed: true,\n    buzzerMs: 200,\n    oledLine1: line1,\n    oledLine2: line2,\n    bme_temp_c: msg.bme_temp_c,\n    bme_hum_pct: msg.bme_hum_pct,\n    sgp30_eco2_ppm: msg.sgp30_eco2_ppm,\n    sgp30_tvoc_ppb: msg.sgp30_tvoc_ppb,\n    bh1750_lux: msg.bh1750_lux,\n    spm1423_noise_db: msg.spm1423_noise_db\n  }\n};\n\nreturn {\n  msg: newMsg,\n  metadata: metadata,\n  msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};",
+          "tbelScript": null
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 1227,
+          "layoutY": 1016
+        },
+        "type": "org.thingsboard.rule.engine.transform.TbTransformNode",
+        "name": "To OK RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "scriptLang": "JS",
+          "jsScript": "// Mensaje RPC hacia el dispositivo en estado OK\nvar newMsg = {\n  method: \"setIndicators\",\n  params: {\n    ledGreen: true,\n    ledRed: false,\n    buzzerMs: 0,\n    oledLine1: \"CONDICION OK\",\n    oledLine2: \"Ambiente estable\",\n    bme_temp_c: msg.bme_temp_c,\n    bme_hum_pct: msg.bme_hum_pct,\n    sgp30_eco2_ppm: msg.sgp30_eco2_ppm,\n    sgp30_tvoc_ppb: msg.sgp30_tvoc_ppb,\n    bh1750_lux: msg.bh1750_lux,\n    spm1423_noise_db: msg.spm1423_noise_db\n  }\n};\n\nreturn {\n  msg: newMsg,\n  metadata: metadata,\n  msgType: \"RPC_CALL_FROM_SERVER_TO_DEVICE\"\n};",
+          "tbelScript": null
+        },
+        "externalId": null
+      },
+      {
+        "additionalInfo": {
+          "layoutX": 1545,
+          "layoutY": 904
+        },
+        "type": "org.thingsboard.rule.engine.rpc.TbSendRPCRequestNode",
+        "name": "Send setIndicators RPC",
+        "debugMode": true,
+        "singletonMode": false,
+        "configurationVersion": 0,
+        "configuration": {
+          "timeoutInSeconds": 30
+        },
+        "externalId": null
+      }
+    ],
+    "connections": [
+      {
+        "fromIndex": 0,
+        "toIndex": 1,
+        "type": "True"
+      },
+      {
+        "fromIndex": 1,
+        "toIndex": 2,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 3,
+        "type": "True"
+      },
+      {
+        "fromIndex": 3,
+        "toIndex": 4,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 5,
+        "type": "True"
+      },
+      {
+        "fromIndex": 5,
+        "toIndex": 6,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 7,
+        "type": "True"
+      },
+      {
+        "fromIndex": 7,
+        "toIndex": 8,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 9,
+        "type": "True"
+      },
+      {
+        "fromIndex": 9,
+        "toIndex": 10,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 11,
+        "type": "True"
+      },
+      {
+        "fromIndex": 11,
+        "toIndex": 12,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 13,
+        "type": "True"
+      },
+      {
+        "fromIndex": 13,
+        "toIndex": 14,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 15,
+        "type": "True"
+      },
+      {
+        "fromIndex": 15,
+        "toIndex": 16,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 17,
+        "type": "True"
+      },
+      {
+        "fromIndex": 17,
+        "toIndex": 18,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 19,
+        "type": "True"
+      },
+      {
+        "fromIndex": 19,
+        "toIndex": 20,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 21,
+        "type": "True"
+      },
+      {
+        "fromIndex": 21,
+        "toIndex": 22,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 23,
+        "type": "True"
+      },
+      {
+        "fromIndex": 23,
+        "toIndex": 24,
+        "type": "True"
+      },
+      {
+        "fromIndex": 0,
+        "toIndex": 25,
+        "type": "True"
+      },
+      {
+        "fromIndex": 25,
+        "toIndex": 26,
+        "type": "True"
+      },
+      {
+        "fromIndex": 25,
+        "toIndex": 27,
+        "type": "False"
+      },
+      {
+        "fromIndex": 26,
+        "toIndex": 28,
+        "type": "Success"
+      },
+      {
+        "fromIndex": 27,
+        "toIndex": 28,
+        "type": "Success"
+      }
+    ],
+    "ruleChainConnections": []
+  }
+}

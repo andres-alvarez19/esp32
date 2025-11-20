@@ -1,8 +1,8 @@
 #pragma once
 
 // Credenciales WiFi
-#define WIFI_SSID     "SSID"
-#define WIFI_PASS     "password"
+#define WIFI_SSID     "FAMILIA MORALES"
+#define WIFI_PASS     "alvarezmorales"
 
 // Identificador de dispositivo (para logs y clientId)
 #define DEVICE_LABEL  "esp_wroom_32"
@@ -10,7 +10,7 @@
 // Configuracion de ThingsBoard
 #define TB_HOST         "iot.ceisufro.cl"
 #define TB_PORT         1883
-#define TB_ACCESS_TOKEN "TOKEN"
+#define TB_ACCESS_TOKEN "TrPoEAdBd7PNI46BLPC5"
 
 // Habilitar/deshabilitar buzzer si no está conectado
 #define BUZZER_ENABLED 1

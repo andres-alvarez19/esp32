@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <math.h>
 
 #include "config.h"
 #include "env_data.h"
@@ -19,7 +20,15 @@ class ThingsboardClient {
   void sendEnv(const EnvData& data);
   void setIndicatorsHardware(uint8_t ledGreenPin, uint8_t ledRedPin, ActiveBuzzer* buzzer);
   bool indicatorsManagedByRpc() const { return _rpcIndicators; }
-   const String& statusMessage() const { return _statusMessage; }
+  const String& statusMessage() const { return _statusMessage; }
+  float oledTempC() const { return _oledTempC; }
+  float oledHumPct() const { return _oledHumPct; }
+  float oledEco2Ppm() const { return _oledEco2Ppm; }
+  float oledTvocPpb() const { return _oledTvocPpb; }
+  float oledLux() const { return _oledLux; }
+  float oledNoiseDb() const { return _oledNoiseDb; }
+  const String& oledLine1() const { return _oledLine1; }
+  const String& oledLine2() const { return _oledLine2; }
 
  private:
   static ThingsboardClient* _instance;
@@ -34,6 +43,19 @@ class ThingsboardClient {
   bool _rpcIndicators = false;
   unsigned long _buzzerOffDeadline = 0;
   String _statusMessage = "OK";
+  float _oledTempC = NAN;
+  float _oledHumPct = NAN;
+  float _oledEco2Ppm = NAN;
+  float _oledTvocPpb = NAN;
+  float _oledLux = NAN;
+  float _oledNoiseDb = NAN;
+  String _oledLine1;
+  String _oledLine2;
+  String _lastLine1;
+  String _lastLine2;
+  bool _lastLedGreen = false;
+  bool _lastLedRed = false;
+  bool _hasLastRpcState = false;
 
   static void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
   void handleRpcMessage(const char* topic, const uint8_t* payload, unsigned int length);

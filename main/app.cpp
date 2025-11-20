@@ -54,7 +54,10 @@ void App::update() {
   const unsigned long oledIntervalMs = 500;
   unsigned long now = millis();
   if (now - lastOledDraw >= oledIntervalMs) {
-    _oled.drawStatus(_tb.statusMessage());
+    _oled.drawRemote(_tb.statusMessage(), _tb.oledLine1(), _tb.oledLine2(),
+                     _tb.oledTempC(), _tb.oledHumPct(),
+                     _tb.oledEco2Ppm(), _tb.oledTvocPpb(), _tb.oledLux(),
+                     _tb.oledNoiseDb());
     lastOledDraw = now;
   }
 
