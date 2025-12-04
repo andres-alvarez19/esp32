@@ -4,6 +4,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <WebServer.h>
+#include <Preferences.h>
 #include <math.h>
 
 #include "config.h"
@@ -31,12 +33,27 @@ class ThingsboardClient {
   const String& oledLine2() const { return _oledLine2; }
 
  private:
+  bool loadCredentials(String& ssid, String& pass);
+  void saveCredentials(const String& ssid, const String& pass);
+  bool connectWifi(const String& ssid, const String& pass);
+  void startConfigPortal();
+  void handleRoot();
+  void handleSave();
+  void clearCredentials();
+  void updateOledIp(const IPAddress& ip, const char* label);
+  String ipToString(const IPAddress& ip) const;
+
   static ThingsboardClient* _instance;
 
   Client& _netClient;
   PubSubClient _mqtt;
+  WebServer _server{80};
   unsigned long _lastConnectAttempt = 0;
   bool _lastConnected = false;
+  bool _wifiConnected = false;
+  bool _apMode = false;
+  bool _shouldReboot = false;
+  IPAddress _apIp;
   uint8_t _ledGreenPin = 0xFF;
   uint8_t _ledRedPin = 0xFF;
   ActiveBuzzer* _buzzer = nullptr;
