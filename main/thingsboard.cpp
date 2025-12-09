@@ -33,9 +33,6 @@ bool ThingsboardClient::begin() {
   }
 
   bool wifiOk = connectWifi(ssid, pass);
-  if (hadStoredCreds) {
-    clearCredentials();
-  }
   if (!wifiOk) {
     Serial.println("[WIFI] No se pudo conectar, iniciando portal de configuracion");
     startConfigPortal();
@@ -172,6 +169,8 @@ void ThingsboardClient::handleSave() {
   String ssid = _server.arg("ssid");
   String pass = _server.arg("password");
 
+  // Limpiar credenciales previas antes de guardar las nuevas
+  clearCredentials();
   saveCredentials(ssid, pass);
   _server.send(200, "text/plain",
                "Credenciales guardadas. El dispositivo se reiniciara...");
@@ -186,7 +185,7 @@ void ThingsboardClient::clearCredentials() {
   }
   prefs.clear();
   prefs.end();
-  Serial.println("[WIFI] Credenciales guardadas eliminadas tras boot");
+  Serial.println("[WIFI] Credenciales previas eliminadas");
 }
 
 String ThingsboardClient::makeClientId() {
