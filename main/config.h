@@ -27,3 +27,6 @@
 #define VAR_TVOC_PPB    "sgp30_tvoc_ppb"
 #define VAR_LUX         "bh1750_lux"
 #define VAR_NOISE_DB    "spm1423_noise_db"
+
+// Intervalo de envío de telemetría (ms)
+#define TB_PUBLISH_INTERVAL_MS 5000

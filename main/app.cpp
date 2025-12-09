@@ -75,8 +75,7 @@ void App::update() {
   _sound.read(_data);
 
   // Logs y envío cada "kPublishIntervalMs"
-  constexpr unsigned long kPublishIntervalMs = 10000; // 10 s
-  if (millis() - _lastPublish < kPublishIntervalMs) return;
+  if (millis() - _lastPublish < TB_PUBLISH_INTERVAL_MS) return;
 
   Serial.println("\n[APP] ----- Ciclo de sensores y envio -----");
   Serial.println("[APP] Preparando lectura de sensores (se muestra por modulo):");
